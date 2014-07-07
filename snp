@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# Runs a command wrapped with btrfs pre-post snapshots.
+log_path="/var/local/log/snp"
+date=$(date "+%Y-%m-%d-%H%M%S")
+log_file="${log_path}/snp_${date}.log"
+ 
+if [ !  -d "$log_path" ]; then
+    mkdir $log_path
+fi
+
+
+# Log stdout and stderr. Reference: http://stackoverflow.com/questions/3173131/redirect-copy-of-stdout-to-log-file-from-within-bash-script-itself
+exec > >(tee -a "$log_file")
+exec 2> >(tee -a "$log_file" >&2)
+ 
+cmd="$@"
+ 
+snapshot_nbr=$(snapper create --type=pre --cleanup-algorithm=number --print-number --description="${cmd}")
+echo -e "> New pre snapshot with number ${snapshot_nbr}."
+echo -e "> Running command \"${cmd}\"."
+ 
+eval "$cmd"
+ 
+snapshot_nbr=$(snapper create --type=post --cleanup-algorithm=number --print-number --pre-number="$snapshot_nbr")
+echo -e "\n> New post snapshot with number ${snapshot_nbr}."
