@@ -1,0 +1,12 @@
+#!/bin/bash
+gsend(){
+    git add $1
+    git commit -vm "$2"
+    git push origin master
+}
+pacman -Qqn > /home/chad/.dotfiles/pacman_pkgs
+pacman -Qqm > /home/chad/.dotfiles/aur_pkgs
+
+cd /home/chad/.dotfiles
+gsend pacman_pkgs "cron push"
+gsend aur_pkgs "cron push"
