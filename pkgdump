@@ -1,12 +1,25 @@
 #!/bin/bash
-dotfilesdir=~/.dotfiles
+#  Written by: crossroads1112
+#  Purpose: This script dumps a list of your installed packages and packages built from the AUR and pushes those files to a git repository.
+#  NOTE: This script requires that you have a git repo already setup. I would recommend putting this script in /etc/cron.weekly
+#  Then install cronie from the official repos and enable it with systemd (systemctl enable cronie && systemctl start cronie) and that's all folks 
+#
+#
+#
+########################################
+dotfilesdir=~/.dotfiles # change this to your dotfiles directory
+if [[ ! -d $dotfilesdir/.git ]];then
+    echo "You must set up a git repo first. I'd recommend taking a look at this quide http://blog.smalleycreative.com/tutorials/using-git-and-github-to-manage-your-dotfiles/"
+    exit 1
+fi
 gsend(){
     git add $1
     git commit -vm "$2"
     git push origin master
 }
-pacman -Qqn > /home/chad/.dotfiles/pacman_pkgs
-pacman -Qqm > /home/chad/.dotfiles/aur_pkgs
+
+pacman -Qqn > $dotfilesdir/pacman_pkgs
+pacman -Qqm > $dotfilesdir/aur_pkgs
 
 cd $dotfilesdir
 gsend pacman_pkgs "cron push"
