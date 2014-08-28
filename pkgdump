@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #  Written by: crossroads1112
 #  Purpose: This script dumps a list of your installed packages and packages built from the AUR and pushes those files to a git repository.
 #  NOTE: This script requires that you have a git repo already setup. I would recommend putting this script in /etc/cron.weekly
