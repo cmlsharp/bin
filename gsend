@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+USAGE="$0: OPT FILE COMMENT"
+if [[ $# -ne 3 ]]; then
+    echo "$USAGE"
+    exit 1
+fi
+
+case $1 in 
+    -d) cd ~/.dotfiles
+        ;;
+    -b) cd ~/bin
+        ;;
+    *)echo "Use -b or -d to specify repo"
+        ;;
+esac
+git add $2
+git commit -vm "$3"
+git push origin master
