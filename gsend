@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
-USAGE="$0: [ -r --remove ] [-d --dir ] FILE COMMENT"
+USAGE="$0: [-h --help ] [ -r --remove ] [-d --dir ] FILE COMMENT"
 remove=0
 args(){
+echo "Args: $@"
+echo "First arg: $1"
     case $1 in 
         -h|--help) echo $USAGE
             exit 0
@@ -14,8 +16,11 @@ args(){
             shift 2
             args $@
             ;;
+        *) echo "No args left, moving on"
 esac
 
+echo $1
+echo $2
 if [[ $remove == 0 ]]; then
     git add $1
 else
@@ -24,32 +29,6 @@ fi
 
 git commit -m "$2"
 git push origin master
+exit 0
 }
 args $@
-
-
-
-
-#if [[ $1 == "-h" ]] || [[ "$1" == "--help" ]]; then
-#    echo "$USAGE"
-#    exit 0
-#fi
-
-#if [[ "$1" == "-r" ]] || [[ "$1" == "--remove" ]]; then
-#    remove=1
-#    shift
-#fi
-
-#if [[ "$1" == "-d" ]] || [[ "$1" == "--dir" ]]; then
-#    cd ~/$2
-#    shift 2
-#fi
-
-#if [[ $remove == 0 ]]; then
-#    git add $1
-#else
-#    git rm $1
-#fi
-
-#git commit -m "$2"
-#git push origin master
