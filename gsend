@@ -1,19 +1,30 @@
 #!/usr/bin/env bash
-USAGE="$0: OPT FILE COMMENT"
-if [[ $# -ne 3 ]]; then
+USAGE="$0: [ -r --remove ] [-b -d ] FILE COMMENT"
+remove=0
+if [[ $# -gt 4 ]] || [[ $# -lt 2 ]]; then
     echo "$USAGE"
     exit 1
 fi
 
-case $1 in 
+if [[ "$1" == "-r" ]] || [[ "$1" == "--remove" ]]; then
+    remove=1
+    shift
+fi
+
+case %1 in
     -d) cd ~/.dotfiles
+        shift
         ;;
     -b) cd ~/bin
-        ;;
-    *)echo "Use -b or -d to specify repo"
-        exit 1
+        shift
         ;;
 esac
-git add $2
-git commit -vm "$3"
+
+if [[ $remove == 0 ]]; then
+    git add $1
+else
+    git rm $1
+fi
+
+git commit -m "$2"
 git push origin master
