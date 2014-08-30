@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-USAGE="$0: [ -r --remove ] [-b -d ] FILE COMMENT"
+USAGE="$0: [ -r --remove ] [-d --dir ] FILE COMMENT"
 remove=0
 if [[ $# -gt 4 ]] || [[ $# -lt 2 ]]; then
     echo "$USAGE"
@@ -10,15 +10,10 @@ if [[ "$1" == "-r" ]] || [[ "$1" == "--remove" ]]; then
     remove=1
     shift
 fi
-
-case $1 in
-    -d) cd ~/.dotfiles
-        shift
-        ;;
-    -b) cd ~/bin
-        shift
-        ;;
-esac
+if [[ "$1" == "-d" ]] || [[ "$1" == "--dir" ]]; then
+    cd ~/$2
+    shift 2
+fi
 
 if [[ $remove == 0 ]]; then
     git add $1
