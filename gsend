@@ -15,14 +15,15 @@ args(){
             args $@
             ;;
 esac
-
+echo $@
 if [[ $remove == 0 ]]; then
     git add $1
 else
     git rm $1
 fi
-
-git commit -m "$2"
+shift
+comment=$@
+git commit -m "$comment"
 git push origin master
 exit 0
 }
