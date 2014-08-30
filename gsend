@@ -11,6 +11,7 @@ case $1 in
     -b) cd ~/bin
         ;;
     *)echo "Use -b or -d to specify repo"
+        exit 1
         ;;
 esac
 git add $2
