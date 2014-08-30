@@ -11,7 +11,7 @@ if [[ "$1" == "-r" ]] || [[ "$1" == "--remove" ]]; then
     shift
 fi
 
-case %1 in
+case $1 in
     -d) cd ~/.dotfiles
         shift
         ;;
