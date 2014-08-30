@@ -2,8 +2,6 @@
 USAGE="$0: [-h --help ] [ -r --remove ] [-d --dir ] FILE COMMENT"
 remove=0
 args(){
-echo "Args: $@"
-echo "First arg: $1"
     case $1 in 
         -h|--help) echo $USAGE
             exit 0
@@ -16,11 +14,8 @@ echo "First arg: $1"
             shift 2
             args $@
             ;;
-        *) echo "No args left, moving on"
 esac
 
-echo $1
-echo $2
 if [[ $remove == 0 ]]; then
     git add $1
 else
