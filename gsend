@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
 USAGE="$0: [-h --help ] [ -r --remove ] [-d --dir ] FILE COMMENT"
 remove=0
+check(){
+    if [[ $? -ne 0 ]]; then
+        echo "Sorry, an error occured. $1"
+        exit
+    fi
+}
 args(){
     case $1 in 
         -h|--help) echo $USAGE
@@ -11,20 +17,23 @@ args(){
             args $@
             ;;
         -d|--dir) cd ~/$2
+            check
+            test -d ./.git 
+            check "No git repository exists in this directory"
             shift 2
             args $@
             ;;
-esac
-echo $@
-if [[ $remove == 0 ]]; then
-    git add $1
-else
-    git rm $1
-fi
-shift
-comment=$@
-git commit -m "$comment"
-git push origin master
-exit 0
+    esac
+    if [[ $remove == 0 ]]; then
+        git add $1
+    else
+        git rm $1
+    fi
+    check "No such file in specified git repo"
+    shift
+    comment=$@
+    git commit -m "$comment"
+    git push origin master
+    exit 0
 }
 args $@
