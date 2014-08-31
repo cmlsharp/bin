@@ -5,7 +5,7 @@ date=$(date "+%Y-%m-%d-%H%M%S")
 log_file="${log_path}/snp_${date}.log"
  
 if [ !  -d "$log_path" ]; then
-    mkdir $log_path
+    mkdir -p $log_path
 fi
 
 
