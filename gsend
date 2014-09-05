@@ -38,8 +38,8 @@ args(){
     fi
     check "No such file in specified git repo"
     shift
-    comment=$@
-    git commit -m "$comment"
+    description=$@
+    git commit -m "$description"
     git push origin master
     exit 0
 }
