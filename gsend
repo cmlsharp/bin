@@ -11,7 +11,7 @@ remove=0
 check(){
     if [[ $? -ne 0 ]]; then
         echo "Sorry, an error occured. $1"
-        exit
+        exit 1
     fi
 }
 args(){
@@ -24,7 +24,7 @@ args(){
             args $@
             ;;
         -d|--dir) cd ~/$2
-            check
+            check "No such directory"
             test -d ./.git 
             check "No git repository exists in this directory"
             shift 2
