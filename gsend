@@ -24,7 +24,7 @@ args(){
             args $@
             ;;
         -d|--dir) cd ~/$2
-            check
+            check "No such directory"
             test -d ./.git 
             check "No git repository exists in this directory"
             shift 2
