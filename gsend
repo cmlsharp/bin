@@ -11,6 +11,7 @@ remove=0
 branch=master
 
 if [[ $# -lt 2 ]]; then
+    echo "This script requres at least two arguments"
     echo -e $USAGE
     exit 1
 fi
