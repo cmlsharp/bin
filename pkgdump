@@ -12,15 +12,12 @@ if [[ ! -d $dotfilesdir/.git ]];then
     echo "You must set up a git repo first. I'd recommend taking a look at this quide http://blog.smalleycreative.com/tutorials/using-git-and-github-to-manage-your-dotfiles/"
     exit 1
 fi
-gsend(){
-    git add $1
-    git commit -vm "$2"
-    git push origin master
-}
 
 pacman -Qqn > $dotfilesdir/pacman_pkgs
 pacman -Qqm > $dotfilesdir/aur_pkgs
 
 cd $dotfilesdir
-gsend pacman_pkgs "cron push"
-gsend aur_pkgs "cron push"
+
+git add pacman_pkgs aur_pkgs
+git commit -vm "cron push"
+git push origin master
