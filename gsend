@@ -30,6 +30,10 @@ args(){
             shift 2
             args $@
             ;;
+        -*|--*) echo "Unrecognized argument"
+           echo "$USAGE"
+           exit 1
+           ;;
     esac
     if [[ $remove == 0 ]]; then
         git add $1
