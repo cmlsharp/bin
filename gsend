@@ -15,6 +15,7 @@ check(){
     fi
 }
 args(){
+    branch="master"
     case $1 in 
         -h|--help) echo $USAGE
             exit 0
@@ -30,6 +31,9 @@ args(){
             shift 2
             args $@
             ;;
+        -b|--branch) branch=$2
+            shift 2
+            ;;
         -*|--*) echo "Unrecognized argument"
            echo "$USAGE"
            exit 1
@@ -44,7 +48,7 @@ args(){
     shift
     description=$@
     git commit -m "$description"
-    git push origin master
+    git push origin $branch 
     exit 0
 }
 args $@
