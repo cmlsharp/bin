@@ -43,7 +43,7 @@ args(){
             shift 2
             args $@
             ;;
-        -*|--*) echo "Unrecognized argument: $1"
+        -*) echo "Unrecognized argument: $1"
             echo -e $USAGE
             exit 1
             ;;
