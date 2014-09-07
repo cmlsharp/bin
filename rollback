@@ -3,6 +3,11 @@ log_path="/var/local/log/rollback"
 date=$(date "+%Y-%m-%d-%H%M%S")
 log_file="${log_path}/rollback_${date}.log"
 
+if (( EUID != 0 )); then
+    echo "This script must be run as root" 1>&2
+    exit 1
+fi
+
 if [ !  -d "$log_path" ]; then
     mkdir $log_path
 fi
@@ -14,20 +19,18 @@ clear
 echo 'Do you want to rollback a [d]aily snapshot or an [u]pgrade?' 
 read input
 
-if  [ $input == "u" ]; then
+if  [[ $input == "u" ]]; then
     clear
     echo 'Undoing most recent upgrade'
     pre=$(sudo snapper list --type pre-post | tail -n -1 | awk -F\| '{print $1}' | tr -d ' ')
     snapper -v undochange $pre..$((pre+1))
 
-elif [ $input == "d" ]; then
+elif [[ $input == "d" ]]; then
     clear
     snapper list --type single | awk -F\| '{print $1"|" $2}'| sed '1,3d' 
     echo -e "\n What is the number of the snapshot you like to return to?"
     read past
-    snapper create 
-    present=$(sudo snapper list --type single | tail -n -1| awk -F\| '{print $1}' | tr -d ' ')
-    snapper undochange $past..$present
+    snapper undochange $past..0
     
 else
     echo "$input is not an acceptable response"
