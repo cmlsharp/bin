@@ -3,6 +3,11 @@
 log_path="/var/local/log/snp"
 date=$(date "+%Y-%m-%d-%H%M%S")
 log_file="${log_path}/snp_${date}.log"
+
+if (( EUID != 0 )); then
+    echo "This script must be run as root" 1>&2
+    exit 1
+fi
  
 if [ !  -d "$log_path" ]; then
     mkdir -p $log_path
