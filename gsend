@@ -6,11 +6,11 @@
 #
 #
 #########################################
-USAGE="gsend OPTIONS FILE COMMENT\n\nOPTIONS:\n [-h --help ]\t\tPrint this help message\n [-r --remove]\t\tRemove file from repo\n [-d --dir ]\t\tSpecify git repo locationi\n [-b --branch]\t\tSpecify branch"
+USAGE="gsend [OPTIONS] FILE COMMENT\n\nOPTIONS:\n [-h --help ]\t\tPrint this help message\n [-r --remove]\t\tRemove file from repo\n [-d --dir ]\t\tSpecify git repo locationi\n [-b --branch]\t\tSpecify branch"
 remove=0
 branch=master
 
-if [[ $# -eq 0 ]]; then
+if [[ $# -lt 2 ]]; then
     echo -e $USAGE
     exit 1
 fi
