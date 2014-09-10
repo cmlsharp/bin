@@ -8,7 +8,7 @@
 #########################################
 USAGE="gsend [OPTIONS] FILE COMMENT\n\nOPTIONS:\n [-h --help ]\t\tPrint this help message\n [-r --remove]\t\tRemove file from repo\n [-d --dir ]\t\tSpecify git repo locationi\n [-b --branch]\t\tSpecify branch"
 remove=0
-branch=master
+#branch=master
 
 if [[ $# -lt 2 ]]; then
     echo "This script requres at least two arguments"
@@ -17,48 +17,53 @@ if [[ $# -lt 2 ]]; then
 fi
 
 check(){
-    if [[ $? -ne 0 ]]; then
-        echo "Sorry, an error occured. $1"
-        exit 1
-    fi
+if [[ $? -ne 0 ]]; then
+    echo "Sorry, an error occured. $1"
+    exit 1
+fi
 }
 
 args(){
+while [[ $(echo $1 | head -c 1) == "-" ]]; do
     case $1 in 
         -h|--help) echo -e "$USAGE"
             exit 0
             ;;
-        -r|--remove) remove=1
+        -r|--remove) eval "remove=1"
             shift
-            args $@
             ;;
         -d|--dir) cd ~/$2
             check "No such directory"
             test -d ./.git 
             check "No git repository exists in this directory"
             shift 2
-            args $@
             ;;
-        -b|--branch) branch=$2
+        -b|--branch) eval "branch=$2"
             shift 2
-            args $@
             ;;
         -*) echo "Unrecognized argument: $1"
             echo -e $USAGE
             exit 1
             ;;
     esac
-    if [[ $remove == 0 ]]; then
-       git add $1
-    else
-        git rm $1
-    fi
-    check "No such file in specified git repo"
-    shift
-    description=$@
-    git commit -m "$description"
-    git push origin $branch
-    exit 0
+done
+send $@
+}
+
+send(){
+if [[ $remove == 0 ]]; then
+   git add $1
+else
+    git rm $1
+fi
+
+check "No such file in specified git repo"
+shift
+description=$@
+
+git commit -m "$description"
+git push origin $branch
+exit 0
 }
 
 args $@
