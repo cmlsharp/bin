@@ -23,6 +23,22 @@ if [[ $? -ne 0 ]]; then
 fi
 }
 
+send(){
+if [[ $remove == 0 ]]; then
+   git add $1
+else
+    git rm $1
+fi
+
+check "No such file in specified git repo"
+shift
+description=$@
+
+git commit -m "$description"
+git push origin $branch
+exit 0
+}
+
 args(){
 while [[ $(echo $1 | head -c 1) == "-" ]]; do
     case $1 in 
@@ -50,20 +66,5 @@ done
 send $@
 }
 
-send(){
-if [[ $remove == 0 ]]; then
-   git add $1
-else
-    git rm $1
-fi
-
-check "No such file in specified git repo"
-shift
-description=$@
-
-git commit -m "$description"
-git push origin $branch
-exit 0
-}
 
 args $@
