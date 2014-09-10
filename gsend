@@ -8,7 +8,7 @@
 #########################################
 USAGE="gsend [OPTIONS] FILE COMMENT\n\nOPTIONS:\n [-h --help ]\t\tPrint this help message\n [-r --remove]\t\tRemove file from repo\n [-d --dir ]\t\tSpecify git repo locationi\n [-b --branch]\t\tSpecify branch"
 remove=0
-#branch=master
+branch=master
 
 if [[ $# -lt 2 ]]; then
     echo "This script requres at least two arguments"
