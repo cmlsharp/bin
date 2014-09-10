@@ -30,7 +30,7 @@ elif [[ $input == "d" ]]; then
     snapper list --type single | awk -F\| '{print $1"|" $2}'| sed '1,3d' 
     echo -e "\n What is the number of the snapshot you like to return to?"
     read past
-    snapper undochange $past..0
+    snapper -v undochange $past..0
     
 else
     echo "$input is not an acceptable response"
