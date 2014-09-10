@@ -17,54 +17,53 @@ if [[ $# -lt 2 ]]; then
 fi
 
 check(){
-if [[ $? -ne 0 ]]; then
-    echo "Sorry, an error occured. $1"
-    exit 1
-fi
+    if [[ $? -ne 0 ]]; then
+        echo "Sorry, an error occured. $1"
+        exit 1
+    fi
 }
 
 send(){
-if [[ $remove == 0 ]]; then
-   git add $1
-else
-    git rm $1
-fi
+    if [[ $remove == 0 ]]; then
+        git add $1
+    else
+        git rm $1
+    fi
 
-check "No such file in specified git repo"
-shift
-description=$@
+    check "No such file in specified git repo"
+    shift
+    description=$@
 
-git commit -m "$description"
-git push origin $branch
-exit 0
+    git commit -m "$description"
+    git push origin $branch
+    exit 0
 }
 
 args(){
-while [[ $(echo $1 | head -c 1) == "-" ]]; do
-    case $1 in 
-        -h|--help) echo -e "$USAGE"
-            exit 0
-            ;;
-        -r|--remove) eval "remove=1"
-            shift
-            ;;
-        -d|--dir) cd ~/$2
-            check "No such directory"
-            test -d ./.git 
-            check "No git repository exists in this directory"
-            shift 2
-            ;;
-        -b|--branch) eval "branch=$2"
-            shift 2
-            ;;
-        -*) echo "Unrecognized argument: $1"
-            echo -e $USAGE
-            exit 1
-            ;;
-    esac
-done
-send $@
+    while [[ $(echo $1 | head -c 1) == "-" ]]; do
+        case $1 in 
+            -h|--help) echo -e "$USAGE"
+                exit 0
+                ;;
+            -r|--remove) eval "remove=1"
+                shift
+                ;;
+            -d|--dir) cd ~/$2
+                check "No such directory"
+                test -d ./.git 
+                check "No git repository exists in this directory"
+                shift 2
+                ;;
+            -b|--branch) eval "branch=$2"
+                shift 2
+                ;;
+            -*) echo "Unrecognized argument: $1"
+                echo -e $USAGE
+                exit 1
+                ;;
+        esac
+    done
+    send $@
 }
-
 
 args $@
