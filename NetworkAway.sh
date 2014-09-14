@@ -1,4 +1,5 @@
 #!/bin/bash
+# This script was written to allow my sister's Mac to connect to her work's sftp server using sshfs. This requires FUSE for OSX to work
 clear
 networkdir=~/Desktop/NetworkAway
 if [ ! -d $networkdir ]; then
