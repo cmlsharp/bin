@@ -16,7 +16,7 @@ check(){
 
 send(){
     if [[ $# -lt 2 ]]; then
-        echo "This script requres at least two arguments"
+        echo "This script requres at least two arguments (excluding parameters)"
         echo "Run gsend -h or gsend --help for usage instructions"
         exit 1
     fi
