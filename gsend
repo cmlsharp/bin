@@ -3,7 +3,7 @@
 # Purpose: Easily adding, updating and removing files from a git repo
 # NOTE: The -d flag assumes your git repos are subdirectories under your home directory (for example, mine are ~/bin and ~/.dotfiles). If this is not your desired behavior remove the ~/ from line 26. Then you may enter the absolute path of the git repo with the -d flag. If that doesn't suit your fancy, you may also just 'cd' into your git repo and forgo the -d flag entirely.  # # #
 #########################################
-USAGE="gsend [OPTIONS] FILE COMMENT\n\nOPTIONS:\n [-h --help ]\t\tPrint this help message\n [-r --remove]\t\tRemove file from repo\n [-d --dir ]\t\tSpecify git repo location\n [-b --branch]\t\tSpecify branch (master by default)"
+USAGE="gsend [OPTIONS] FILE COMMENT\n\nOPTIONS:\n [-h --help ]\t\tPrint this help message\n [-r --remove]\t\tRemove file from repo\n [-d --dir ]\t\tSpecify git repo location (current directory by default)\n [-b --branch]\t\tSpecify branch (master by default)"
 remove=0
 branch=master
 
