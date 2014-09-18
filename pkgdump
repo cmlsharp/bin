@@ -8,6 +8,7 @@
 #
 ########################################
 dotfilesdir=~/.dotfiles # change this to your dotfiles directory
+change=0
 if [[ ! -d $dotfilesdir/.git ]];then
     echo "You must set up a git repo first. I'd recommend taking a look at this quide http://blog.smalleycreative.com/tutorials/using-git-and-github-to-manage-your-dotfiles/"
     exit 1
@@ -18,6 +19,16 @@ pacman -Qqm > $dotfilesdir/aur_pkgs
 
 cd $dotfilesdir
 
-git add pacman_pkgs aur_pkgs
-git commit -vm "cron push"
-git push origin master
+for i in pacman_pkgs aur_pkgs; do 
+    if [[ ! -z $(git diff $i) ]]; then
+        git add $i
+        change=1
+    else
+        echo "No change in ${i}. Ignoring"
+    fi
+done
+
+if [[ $change == 1 ]]; then
+    git commit -vm "cron push"
+    git push origin master
+fi
