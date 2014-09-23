@@ -8,10 +8,8 @@ remove=0
 branch=master
 
 check(){
-    if [[ $? -ne 0 ]]; then
-        echo "Sorry, an error occured. $1"
-        exit 1
-    fi
+    echo "$1"
+    exit 1
 }
 
 send(){
@@ -20,14 +18,15 @@ send(){
         echo "Execute gsend -h or gsend --help for usage instructions"
         exit 1
     fi
-
+    
+    {
     if [[ $remove == 0 ]]; then
         git add $1
     else
         git rm $1
     fi
+    } > /dev/null 2>&1 || check "No such file in specified git repo"
 
-    check "No such file in specified git repo"
     shift
     description=$@
 
@@ -45,10 +44,8 @@ args(){
             -r|--remove) eval "remove=1"
                 shift
                 ;;
-            -d|--dir) cd ~/$2
-                check "No such directory"
-                test -d ./.git 
-                check "No git repository exists in this directory"
+            -d|--dir) cd ~/$2 > /dev/null 2>&1 || check "No such directory"
+                test -d ./.git || check "No git repository exists in this directory"
                 shift 2
                 ;;
             -b|--branch) eval "branch=$2"
