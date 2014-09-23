@@ -1,16 +1,18 @@
 #!/usr/bin/env bash
 while [[ $@ != "" ]]; do
+remmsg="\e[0;32m$1 removed"
+
     if [[ -f $1 || -h $1 ]]; then
-        rm $1
+        rm $1 && echo -e "$remmsg"
         shift
     elif [[ -d $1 ]]; then
         echo -n "$1 is a directory. Do you still want to delete it? [Y/n] "
         read del
         case $del in
-            ""|[Yy]|[Yy][Ee][Ss]) rm -rf $1 ;;
+            ""|[Yy]|[Yy][Ee][Ss]) rm -rf $1 && echo -e "$remmsg" ;;
         esac
         shift
-    elif [[ -e $1 ]]; then
+    elif [[ ! -e $1 ]]; then
         echo "$1 does not exist"
         shift
     else
