@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+while [[ $@ != "" ]]; do
+    if [[ -f $1 ]]; then
+        rm $1
+        shift
+    elif [[ -d $1 ]]; then
+        echo -n "$1 is a directory. Do you still want to delete it? [Y/n] "
+        read del
+        case $del in
+            ""|[Yy]|[Yy][Ee][Ss]) rm -rf $1 ;;
+        esac
+        shift
+    elif [[ -e $1 ]]; then
+        echo "$1 does not exist"
+        shift
+    else
+        echo "$1 is not a regular file or directory. You'll have to use rm itself."
+        shift
+    fi
+done
