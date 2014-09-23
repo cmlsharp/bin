@@ -28,7 +28,7 @@ if  [[ $input == "u" ]]; then
 elif [[ $input == "d" ]]; then
     clear
     snapper list --type single | awk -F\| '{print $1"|" $2}'| sed '1,3d' 
-    echo -e "\n What is the number of the snapshot you like to return to?"
+    echo -en "\n Number of the snapshot you like to return to: " 
     read past
     snapper -v undochange $past..0
     
