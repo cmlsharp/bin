@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 country='US'
-echo "Your usual country? [Y/n]"
+echo -n "Your usual country? [Y/n] "
 read answer
 case $answer in
     ""|[Yy]|[Yy][Ee][Ss]) sudo reflector --verbose --country=$country -l 20 -p http --sort rate --save /etc/pacman.d/mirrorlist
