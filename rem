@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 bold=$(tput bold)
 normal=$(tput sgr0)
+[[ $# == 0 ]] && echo "${0##*/}: This script requires at least one argument"
 while [[ $# > 0 ]]; do
 remmsg="${bold}$1${normal} removed"
 
