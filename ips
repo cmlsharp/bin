@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 echo "Internal IP address:"
-ip route get 8.8.8.8 | awk -F'src ' '/src/{print $2}'
+ip route |  awk -F'src ' '/src/{print $2}'
 echo ""
 echo "External IP address:"
 curl icanhazip.com
