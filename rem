@@ -1,4 +1,12 @@
 #!/usr/bin/env bash
+#
+# Written by: crossroads1112
+# Purpose: This scrip is in esscence a wrapper to rm. It detects whether the file the user is trying to delete is a file, an empty directory, a non-empty directory or a file/directory that you do not own. 
+# This script will prompt the user when the user does not have write permissions to the file/folder or when it is a non-empty directory. It also prints out a list of removed files/directories upon termination. 
+#
+#
+#
+##############################################
 bold=$(tput bold)
 normal=$(tput sgr0)
 

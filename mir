@@ -1,4 +1,11 @@
 #!/usr/bin/env bash
+#
+# Written by: crossroads1112
+# Purpose: This is a bash wrapper to the reflector python script/library. It prompts the user for his/her country code and substitutes that into the reflector command.
+# It also has the option to change the default country. 
+#
+#
+#########################################
 country='US'
 echo -n "Your usual country? [Y/n] "
 read answer

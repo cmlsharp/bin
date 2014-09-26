@@ -1,4 +1,11 @@
 #! /usr/bin/env bash
+#
+# Written by: crossroads1112
+# Purpose: This script is complimentary to the snp script. It makes the process rolling back upgrades and daily snapshots easier
+#
+#
+#
+################################
 log_path="/var/local/log/rollback"
 date=$(date "+%Y-%m-%d-%H%M%S")
 log_file="${log_path}/rollback_${date}.log"

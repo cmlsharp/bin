@@ -1,4 +1,9 @@
 #!/usr/bin/env bash
+#
+# Written by: crossroads1112
+# Purpose: Prints LAN IP and WAN IP
+#
+############################3
 echo "Internal IP address:"
 ip route |  awk -F'src ' '/src/{print $2}'
 echo ""

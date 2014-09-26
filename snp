@@ -1,5 +1,11 @@
 #!/usr/bin/env bash
-# Runs a command wrapped with btrfs pre-post snapshots.
+#
+#
+# Written by: erikw
+# Modified by: crossroads1112
+# Purpose: " Runs a command wrapped in pre-post snapshots. Snapper supports ext4, btrfs and LVM.
+#
+###############################################
 log_path="/var/local/log/snp"
 date=$(date "+%Y-%m-%d-%H%M%S")
 log_file="${log_path}/snp_${date}.log"
