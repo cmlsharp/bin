@@ -9,7 +9,7 @@ if (( EUID != 0 )); then
     exit 1
 fi
  
-if [ !  -d "$log_path" ]; then
+if [[ !  -d "$log_path" ]]; then
     mkdir -p $log_path
 fi
 
