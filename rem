@@ -1,22 +1,36 @@
 #!/usr/bin/env bash
 bold=$(tput bold)
 normal=$(tput sgr0)
-[[ $# == 0 ]] && echo "${0##*/}: This script requires at least one argument"
-while [[ $# > 0 ]]; do
-remmsg="${bold}$1${normal} removed"
 
+[[ $# == 0 ]] && echo "${0##*/}: This script requires at least one argument"
+
+checkroot(){
+    if [[ ! -w $1 ]]; then
+        echo -n "You do not have write permissions to \"$1\". Use sudo? [Y/n] "
+        read root
+        case $root in 
+            ""|[Yy]|[Yy][Ee][Ss]) eval "v=sudo"
+        esac
+    fi
+}
+
+while [[ $# > 0 ]]; do
+    remmsg="${bold}$1${normal} removed"
+    v=""
     if [[ -f $1 || -h $1 ]]; then
-        rm $1 && echo "File $remmsg"
+        checkroot $1
+        $v rm $1 && echo "File $remmsg"
         shift
     elif [[ -d $1 ]]; then
+        checkroot $1
         if [[ -z $(ls -A $1 ) ]]; then
-            rmdir $1 && echo "Empty directory $remmsg"
-            shift
+            $v rmdir $1 && echo "Empty directory $remmsg"
+           shift
         else
             echo -n "$1 is a directory. Do you still want to delete it? [Y/n] "
             read del
             case $del in
-                ""|[Yy]|[Yy][Ee][Ss]) rm -rf $1 && echo "Directory $remmsg recursively" ;;
+                ""|[Yy]|[Yy][Ee][Ss]) $v rm -rf $1 && echo "Directory $remmsg recursively" ;;
             esac
             shift
         fi
