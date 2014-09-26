@@ -2,7 +2,7 @@
 bold=$(tput bold)
 normal=$(tput sgr0)
 
-[[ $# == 0 ]] && echo "${0##*/}: This script requires at least one argument"
+[[ $# == 0 ]] && echo "${0##*/}: This script requires at least one argument" && exit 1
 
 checkroot(){
     if [[ ! -w $1 ]]; then
