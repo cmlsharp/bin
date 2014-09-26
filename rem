@@ -17,7 +17,7 @@ checkroot(){
         echo -n "You do not have write permissions to \"$1\". Use sudo? [Y/n] "
         read root
         case $root in 
-            ""|[Yy]|[Yy][Ee][Ss]) eval "v=sudo"
+            ""|[Yy]|[Yy][Ee][Ss]) eval "v='sudo '"
         esac
     fi
 }
@@ -27,18 +27,18 @@ while [[ $# > 0 ]]; do
     v=""
     if [[ -f $1 || -h $1 ]]; then
         checkroot $1
-        $v rm $1 && echo "File $remmsg"
+        ${v}rm $1 && echo "File $remmsg"
         shift
     elif [[ -d $1 ]]; then
         checkroot $1
         if [[ -z $(ls -A $1 ) ]]; then
-            $v rmdir $1 && echo "Empty directory $remmsg"
+            ${v}rmdir $1 && echo "Empty directory $remmsg"
            shift
         else
             echo -n "$1 is a directory. Do you still want to delete it? [Y/n] "
             read del
             case $del in
-                ""|[Yy]|[Yy][Ee][Ss]) $v rm -rf $1 && echo "Directory $remmsg recursively" ;;
+                ""|[Yy]|[Yy][Ee][Ss]) ${v}rm -rf $1 && echo "Directory $remmsg recursively" ;;
             esac
             shift
         fi
