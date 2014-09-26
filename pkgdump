@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 #  Written by: crossroads1112
-#  Purpose: This script dumps a list of your installed packages and packages built from the AUR and pushes those files to a git repository.
-#  NOTE: This script requires that you have a git repo already setup. I would recommend putting this script in /etc/cron.weekly
-#  Then install cronie from the official repos and enable it with systemd (systemctl enable cronie && systemctl start cronie) and that's all folks 
+#
+# Purpose: This script dumps a list of your installed packages and packages built from the AUR and pushes those files to a git repository.
+# NOTE: This script requires that you have a git repo already setup. I would recommend putting this script in /etc/cron.weekly
+# Then install cronie from the official repos and enable it with systemd (systemctl enable cronie && systemctl start cronie) and that's all folks 
 #
 #
 #
@@ -22,13 +23,9 @@ cd $dotfilesdir
 for i in pacman_pkgs aur_pkgs; do 
     if [[ ! -z $(git diff $i) ]]; then
         git add $i
-        change=1
+        git commit -vm "Pkgdump script"
+        git push origin master
     else
         echo "No change in ${i}. Ignoring"
     fi
 done
-
-if [[ $change == 1 ]]; then
-    git commit -vm "cron push"
-    git push origin master
-fi
