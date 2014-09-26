@@ -23,9 +23,13 @@ cd $dotfilesdir
 for i in pacman_pkgs aur_pkgs; do 
     if [[ ! -z $(git diff $i) ]]; then
         git add $i
-        git commit -vm "Pkgdump script"
-        git push origin master
+        change=1
     else
         echo "No change in ${i}. Ignoring"
     fi
 done
+
+if [[ $change == 1 ]]; then
+    git commit -vm "Pkgdump script"
+    git push origin master
+fi
