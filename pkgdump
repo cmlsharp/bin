@@ -25,7 +25,7 @@ for i in pacman_pkgs aur_pkgs; do
         git add $i
         change=1
     else
-        echo "No change in ${i}. Ignoring"
+        echo -e "\e[0;32mNo change in ${i}. Ignoring\e[0m"
     fi
 done
 
