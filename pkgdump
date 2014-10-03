@@ -15,13 +15,13 @@ if [[ ! -d $dotfilesdir/.git ]];then
     exit 1
 fi
 
-pacman -Qqn > $dotfilesdir/pacman_pkgs
-pacman -Qqm > $dotfilesdir/aur_pkgs
+pacman -Qqn > $dotfilesdir/pacman_pkgs #Dump package list from official repos
+pacman -Qqm > $dotfilesdir/aur_pkgs #Dump package list not from oficial repos
 
 cd $dotfilesdir
 
 for i in pacman_pkgs aur_pkgs; do 
-    if [[ ! -z $(git diff $i) ]]; then
+    if [[ ! -z $(git diff $i) ]]; then #Only run git add if there is a difference between local and remote files
         git add $i
         change=1
     else
@@ -29,7 +29,7 @@ for i in pacman_pkgs aur_pkgs; do
     fi
 done
 
-if [[ $change == 1 ]]; then
+if [[ $change == 1 ]]; then #If there was a difference, commit and push
     git commit -vm "Pkgdump script"
     git push origin master
 fi

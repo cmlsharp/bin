@@ -8,12 +8,12 @@ remove=0
 branch=master
 
 check(){
-    echo "$1"
-    exit 1
+    echo "$1" #Print message supplied to function
+    exit 1 
 }
 
 send(){
-    if [[ $# -lt 2 ]]; then
+    if [[ $# -lt 2 ]]; then #If less than two arguments supplied excluding arguments, exit script.
         echo "${0##*/}: This script requres at least two arguments (excluding parameters)"
         echo "Execute ${0##*/} -h or ${0##*/} --help for usage instructions"
         exit 1
@@ -25,28 +25,27 @@ send(){
     else
         git rm $1
     fi
-    } > /dev/null 2>&1 || check "No such file in specified git repo"
+    } 2> /dev/null || check "No such file in specified git repo" #Send stderr from the block of code to /dev/null. If either command that is run fails, run the check function.
 
-    shift
-    description=$@
+    shift #Get rid of file name
+    description=$@ #Set $description equal to all remaining arguments
 
     git commit -m "$description"
     git push origin $branch
-    exit 0
 }
 
 args(){
-    while [[ $(echo $1 | head -c 1) == "-" ]]; do
+    while [[ $(echo $1 | head -c 1) == "-" ]]; do #While the first supplied argument begins with a - run case statemtnt
         case $1 in 
             -h|--help) echo -e "$USAGE"
                 exit 0
                 ;;
-            -r|--remove) eval "remove=1"
-                shift
+            -r|--remove) eval "remove=1" #eval must be used because $remove needs to be a global variable, not specific to this function
+                shift #Get rid of $1 and move $2 to $1
                 ;;
-            -d|--dir) cd ~/$2 > /dev/null 2>&1 || check "No such directory"
-                test -d ./.git || check "No git repository exists in this directory"
-                shift 2
+            -d|--dir) cd ~/$2 > /dev/null 2>&1 || check "No such directory" #If dir does not exist, run check function
+                test -d ./.git || check "No git repository exists in this directory" #If there is no .git folder, run check function
+                shift 2 #Get rid of both the -d option and the file name and move $3 to $1
                 ;;
             -b|--branch) eval "branch=$2"
                 shift 2
@@ -57,7 +56,7 @@ args(){
                 ;;
         esac
     done
-    send $@
+    send $@ #After all arguments have been accounted for, execute send function with all remaining arguments
 }
 
-args $@
+args $@ #All functions have been defined, run args function with all arguments supplied to the script. 

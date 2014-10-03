@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 # Written by: crossroads1112
-# Purpose: This scrip is in esscence a wrapper to rm. It detects whether the file the user is trying to delete is a file, an empty directory, a non-empty directory or a file/directory that you do not own. 
+# Purpose: This scrip is in esscence a wrapper to rm. It detects whether the file the user is trying to delete is a file, an empty directory, a non-empty directory or a file/directory that you do not own.
 # This script will prompt the user when the user does not have write permissions to the file/folder or when it is a non-empty directory. It also prints out a list of removed files/directories upon termination. 
 #
 #
@@ -13,29 +13,29 @@ normal=$(tput sgr0)
 [[ $# == 0 ]] && echo "${0##*/}: This script requires at least one argument" && exit 1
 
 checkroot(){
-    if [[ ! -w $1 ]]; then
+    if [[ ! -w $1 ]]; then #If user does not have write permissions, prompt the use of sudo
         echo -n "You do not have write permissions to \"$1\". Use sudo? [Y/n] "
         read root
-        case $root in 
-            ""|[Yy]|[Yy][Ee][Ss]) eval "v='sudo '"
+        case $root in
+            ""|[Yy]|[Yy][Ee][Ss]) eval "v='sudo '" #Set global variable $v to sudo
         esac
     fi
 }
 
-while [[ $# > 0 ]]; do
+while [[ $# > 0 ]]; do #While number of files to delete is > 0 do the following
     remmsg="${bold}$1${normal} removed"
-    v=""
-    if [[ -f $1 || -h $1 ]]; then
+    v="" #Reset sudo choice
+    if [[ -f $1 || -h $1 ]]; then #If the argument is a file or a link, delete it without prompt
+        checkroot $1 #Check if root is required to delete it
+        ${v}rm $1 && echo "File $remmsg" #If $v is unset (root not required), rm will run as normal
+        shift 
+    elif [[ -d $1 ]]; then #Check if argument is a directory
         checkroot $1
-        ${v}rm $1 && echo "File $remmsg"
-        shift
-    elif [[ -d $1 ]]; then
-        checkroot $1
-        if [[ -z $(ls -A $1 ) ]]; then
+        if [[ -z $(ls -A $1 ) ]]; then #Check if directory is empty. If so, delete without prompt
             ${v}rmdir $1 && echo "Empty directory $remmsg"
            shift
         else
-            echo -n "$1 is a directory. Do you still want to delete it? [Y/n] "
+            echo -n "$1 is a directory. Do you still want to delete it? [Y/n] " #If directory is not empty, prompt for deletion
             read del
             case $del in
                 ""|[Yy]|[Yy][Ee][Ss]) ${v}rm -rf $1 && echo "Directory $remmsg recursively" ;;
@@ -46,7 +46,7 @@ while [[ $# > 0 ]]; do
         echo "$1 does not exist"
         shift
     else
-        echo "$1 is not a regular file or directory. You'll have to use rm itself."
+        echo "$1 is not a regular file or directory. You'll have to use rm itself." #If the script encounters something that is not a file, link or directory (such as a block device) quit
         shift
     fi
 done

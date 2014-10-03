@@ -10,12 +10,12 @@ log_path="/var/local/log/snp"
 date=$(date "+%Y-%m-%d-%H%M%S")
 log_file="${log_path}/snp_${date}.log"
 
-if (( EUID != 0 )); then
+if (( EUID != 0 )); then #Don't allow script to run as anything but root
     echo "This script must be run as root" 1>&2
     exit 1
 fi
  
-if [[ !  -d "$log_path" ]]; then
+if [[ !  -d "$log_path" ]]; then #If log directory does not exist, create it
     mkdir -p $log_path
 fi
 
@@ -24,13 +24,13 @@ fi
 exec > >(tee -a "$log_file")
 exec 2> >(tee -a "$log_file" >&2)
  
-cmd="$@"
+cmd="$@" #Set all arguments to $cmd
  
-snapshot_nbr=$(snapper create --type=pre --cleanup-algorithm=number --print-number --description="${cmd}")
+snapshot_nbr=$(snapper create --type=pre --cleanup-algorithm=number --print-number --description="${cmd}") #Create snapshot and grab number
 echo -e "> New pre snapshot with number ${snapshot_nbr}."
 echo -e "> Running command \"${cmd}\"."
  
-eval "$cmd"
+eval "$cmd" #Run arguments
  
-snapshot_nbr=$(snapper create --type=post --cleanup-algorithm=number --print-number --pre-number="$snapshot_nbr")
+snapshot_nbr=$(snapper create --type=post --cleanup-algorithm=number --print-number --pre-number="$snapshot_nbr") #Create post snapshot and grab number
 echo -e "\n> New post snapshot with number ${snapshot_nbr}."

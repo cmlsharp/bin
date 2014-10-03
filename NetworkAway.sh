@@ -7,34 +7,34 @@
 ##############################################################################
 clear
 networkdir=~/Desktop/NetworkAway
-if [ ! -d $networkdir ]; then
+if [ ! -d $networkdir ]; then #If mount location does not exist, create it
    mkdir $networkdir
 fi
 
 check(){
-if grep -q  "mmfab-server-away"  /etc/hosts; then
+if grep -q  "mmfab-server-away"  /etc/hosts; then #Make sure host exists
    echo -e "\n\n\n"
-   echo "Tell Chad that mmfab-server-away is not listed in the hosts file"
+   echo "Tell Chad that mmfab-server-away is not listed in the hosts file" #The real script has the IP address here instead
    exit 1
 fi
 
-mount | grep fuse > /dev/null
-if [[ $? -eq 0 ]]; then
+if mount | grep fuse > /dev/null ; then #Check if already mounted
     echo -e "\n\n\n"
     echo "You're already connected silly"
     read -p "Press any key to open the network in Finder"
-    open $networkdir
+    open $networkdir #Open dir in finder
     exit 0
 fi
 }
 
 connect(){
+echo -e "\n\n\n"
 echo "Yo, connectin' to da server homeslice, but fo' I do dat, what yo' username is?" 
 echo ""
 printf "Username: "
 read user
 sshfs -o defer_permissions $user@mmfab-server-away:/ $networkdir
-if [[ $? -eq 0 ]]; then
+if [[ $? -eq 0 ]]; then #Make sure previous command worked
     open $networkdir
     exit 0
 else
@@ -46,6 +46,4 @@ else
 fi
 }
 check
-echo -e "\n\n\n"
 connect
-
