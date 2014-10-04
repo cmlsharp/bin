@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+#
+# Written by: crossroads1112
+# Purpose: Super simple script that prints out what package owns a particular program. About as sophisticated as an alias.
+#
+#
+#
+#########################################33
+location=$(whereis $1 | awk '{print $2}')
+
+if [[ $location ]]; then
+    pacman -Qo $location
+else
+    echo "Package $1 not found"
+fi
