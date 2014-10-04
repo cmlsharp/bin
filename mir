@@ -21,7 +21,7 @@ case $answer in
         echo "Would you like to make this your default country? [y/N]"
         read answer
         case $answer in
-            [Yy]|[Yy][Ee][Ss]) sed -i "9s/country='[A-Z][A-Z]'/country='$country'/" $0 #Use sed to change the country variable on the ninth line of the script.
+            [Yy]|[Yy][Ee][Ss]) sed -i "s/country='[A-Z][A-Z]'/country='$country'/" $0 #Use sed to change the country variable.
                ;;
         esac
         ;;
