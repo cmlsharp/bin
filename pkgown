@@ -26,7 +26,7 @@ check $@
 noargs(){
    if [[ -f /etc/lsb-release ]]; then
        eval ". /etc/lsb-release"
-       DISTRIB_ID=${DISTRIB_ID,,}
+       eval "DISTRIB_ID=${DISTRIB_ID,,}"
        check $@
    else 
        echo "lsb-release not found. Run ${0##*/} with the -d flag to manually specify distro."
@@ -44,15 +44,19 @@ check(){
         *) echo "$distromsg" && exit 1 ;;
     esac
     
-    location=$(whereis $1 | awk '{print $2}')
+    location=$(whereis -b $1 | awk '{print $2}')
     if [[ $location ]]; then
         eval "$pkgcmd $location"
     else
         echo "Package $1 not found"
     fi
 }
-if [[ $(echo $1 | head -c 1) == "-" ]]; then
-    args $@
+if [[ $# -lt 1 ]]; then
+    echo "${0##*/} requires at least one argument"
 else
-    noargs $@
+    if [[ $(echo $1 | head -c 1) == "-" ]]; then
+        args $@
+    else
+        noargs $@
+    fi
 fi
