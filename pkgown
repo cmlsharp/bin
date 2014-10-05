@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 # Written by: crossroads1112
-# Purpose: Super simple script that prints out what package owns a particular program. About as sophisticated as an alias.
+# Purpose: Simple script that prints out what package owns a particular program.
 #
 #
 #
@@ -39,7 +39,7 @@ check(){
         arch) pkgcmd="pacman -Qo" ;;
         ubuntu|debian)pkgcmd="dpkg -S" ;; 
         gentoo)pkgcmd="equery belongs -e" ;;
-        fedora|centOS)pkgcmd="yum whatprovides" ;;
+        fedora|centos)pkgcmd="yum whatprovides" ;;
         opensuse) pkgcmd="zypper what-provides" ;;
         *) echo "$distromsg" && exit 1 ;;
     esac
