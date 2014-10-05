@@ -1,5 +1,12 @@
 #!/usr/bin/env bash
-
+#
+# Written by: crossroads1112
+# Purpose: Automate post-install setup of Arch Linux
+#
+#
+#
+#
+##############################
 dir=~/.dotfiles # dotfiles directory
 olddir=~/.dotfiles_old # old dotfiles backup directory
 files="zshrc vimrc tmux.conf vimperatorrc" # list of files/folders to symlink in homedir
