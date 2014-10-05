@@ -6,10 +6,53 @@
 #
 #
 #########################################33
-location=$(whereis $1 | awk '{print $2}')
+distromsg="${0##*/} does not support your distrobution. Acceptable values are Arch, Ubuntu, Debian, Gentoo, Fedora, CentOS openSUSE. If your distro uses the same package manager as one of the above distros, you may specify it with the -d flag" 
 
-if [[ $location ]]; then
-    pacman -Qo $location
+args(){
+    while [[ $(echo $1 | head -c 1) == "-" ]]; do
+        case $1 in 
+            -d) eval "DISTRIB_ID=${2,,}"
+                shift 2 
+                ;;
+            *) echo "Unrecognized argument: $1" 
+               exit 1
+                ;;
+        esac
+    done
+check $@
+}
+
+
+noargs(){
+   if [[ -f /etc/lsb-release ]]; then
+       eval ". /etc/lsb-release"
+       DISTRIB_ID=${DISTRIB_ID,,}
+       check $@
+   else 
+       echo "lsb-release not found. Run ${0##*/} with the -d flag to manually specify distro."
+       exit 1
+    fi
+}
+
+check(){
+    case $DISTRIB_ID in
+        arch) pkgcmd="pacman -Qo" ;;
+        ubuntu|debian)pkgcmd="dpkg -S" ;; 
+        gentoo)pkgcmd="equery belongs -e" ;;
+        fedora|centOS)pkgcmd="yum whatprovides" ;;
+        opensuse) pkgcmd="zypper what-provides" ;;
+        *) echo "$distromsg" && exit 1 ;;
+    esac
+    
+    location=$(whereis $1 | awk '{print $2}')
+    if [[ $location ]]; then
+        eval "$pkgcmd $location"
+    else
+        echo "Package $1 not found"
+    fi
+}
+if [[ $(echo $1 | head -c 1) == "-" ]]; then
+    args $@
 else
-    echo "Package $1 not found"
+    noargs $@
 fi
