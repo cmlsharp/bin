@@ -56,6 +56,3 @@ description=$@ #Set $description equal to all remaining arguments
 
 git commit -m "$description"
 git push $location $branch
-
-
-
