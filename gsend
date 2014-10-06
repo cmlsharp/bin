@@ -12,54 +12,50 @@ check(){
     exit 1 
 }
 
-send(){
-    if [[ $# -lt 2 ]]; then #If less than two arguments supplied excluding arguments, exit script.
-        echo "${0##*/}: This script requres at least two arguments (excluding parameters)"
-        echo "Execute ${0##*/} -h or ${0##*/} --help for usage instructions"
-        exit 1
-    fi
-    
-    {
-    if [[ $remove == 0 ]]; then
-        git add $1
-    else
-        git rm $1
-    fi
-    } 2> /dev/null || check "No such file in specified git repo" #Send stderr from the block of code to /dev/null. If either command that is run fails, run the check function.
+while [[ $(echo $1 | head -c 1) == "-" ]]; do #While the first supplied argument begins with a - run case statemtnt
+    case $1 in 
+        -h|--help) echo -e "$USAGE"
+            exit 0
+             ;;
+         -r|--remove) remove=1 
+            shift #Get rid of $1 and move $2 to $1
+            ;;
+        -d|--dir) cd ~/$2 > /dev/null 2>&1 || check "No such directory" #If dir does not exist, run check function
+            test -d ./.git || check "No git repository exists in this directory" #If there is no .git folder, run check function
+            shift 2 #Get rid of both the -d option and the file name and move $3 to $1
+            ;;
+        -b|--branch) branch=$2
+            shift 2
+            ;;
+        -l|--location) location=$2
+            shift 2
+            ;;
+        -*) echo "Unrecognized argument: $1"
+            echo -e $USAGE
+            exit 1
+            ;;
+    esac
+done
 
-    shift #Get rid of file name
-    description=$@ #Set $description equal to all remaining arguments
+if [[ $# -lt 2 ]]; then #If less than two arguments supplied excluding arguments, exit script.
+    echo "${0##*/}: This script requres at least two arguments (excluding parameters)"
+    echo "Execute ${0##*/} -h or ${0##*/} --help for usage instructions"
+    exit 1
+fi
 
-    git commit -m "$description"
-    git push $location $branch
-}
+{
+if [[ $remove == 0 ]]; then
+    git add $1
+else
+    git rm $1
+fi
+} 2> /dev/null || check "No such file in specified git repo" #Send stderr from the block of code to /dev/null. If either command that is run fails, run the check function.
 
-args(){
-    while [[ $(echo $1 | head -c 1) == "-" ]]; do #While the first supplied argument begins with a - run case statemtnt
-        case $1 in 
-            -h|--help) echo -e "$USAGE"
-                exit 0
-                ;;
-            -r|--remove) eval "remove=1" #eval must be used because $remove needs to be a global variable, not specific to this function
-                shift #Get rid of $1 and move $2 to $1
-                ;;
-            -d|--dir) cd ~/$2 > /dev/null 2>&1 || check "No such directory" #If dir does not exist, run check function
-                test -d ./.git || check "No git repository exists in this directory" #If there is no .git folder, run check function
-                shift 2 #Get rid of both the -d option and the file name and move $3 to $1
-                ;;
-            -b|--branch) eval "branch=$2"
-                shift 2
-                ;;
-            -l|--location) eval "location=$2"
-                shift 2
-                ;;
-            -*) echo "Unrecognized argument: $1"
-                echo -e $USAGE
-                exit 1
-                ;;
-        esac
-    done
-    send $@ #After all arguments have been accounted for, execute send function with all remaining arguments
-}
+shift #Get rid of file name
+description=$@ #Set $description equal to all remaining arguments
 
-args $@ #All functions have been defined, run args function with all arguments supplied to the script. 
+git commit -m "$description"
+git push $location $branch
+
+
+
