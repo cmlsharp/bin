@@ -3,10 +3,10 @@
 # Purpose: Easily adding, updating and removing files from a git repo
 # NOTE: The -d flag assumes your git repos are subdirectories under your home directory (for example, mine are ~/bin and ~/.dotfiles). If this is not your desired behavior remove the ~/ from line 26. Then you may enter the absolute path of the git repo with the -d flag. If that doesn't suit your fancy, you may also just 'cd' into your git repo and forgo the -d flag entirely.  # # #
 #########################################
-USAGE="${0##*/} [OPTIONS] FILE COMMENT\n\nOPTIONS:\n [-h --help ]\t\tPrint this help message\n [-r --remove]\t\tRemove file from repo\n [-d --dir ]\t\tSpecify git repo location (current directory by default)\n [-b --branch]\t\tSpecify branch (master by default)"
+USAGE="${0##*/} [OPTIONS] FILE COMMENT\n\nOPTIONS:\n [-h --help ]\t\tPrint this help message\n [-r --remove]\t\tRemove file from repo\n [-d --dir ]\t\tSpecify local repo location (current directory by default)\n [-l --location]\tSpecify remote repo location (origin by default)\n [-b --branch]\t\tSpecify branch (master by default)"
 remove=0
 branch=master
-
+location=origin
 check(){
     echo "$1" #Print message supplied to function
     exit 1 
@@ -31,7 +31,7 @@ send(){
     description=$@ #Set $description equal to all remaining arguments
 
     git commit -m "$description"
-    git push origin $branch
+    git push $location $branch
 }
 
 args(){
@@ -48,6 +48,9 @@ args(){
                 shift 2 #Get rid of both the -d option and the file name and move $3 to $1
                 ;;
             -b|--branch) eval "branch=$2"
+                shift 2
+                ;;
+            -l|--location) eval "location=$2"
                 shift 2
                 ;;
             -*) echo "Unrecognized argument: $1"
