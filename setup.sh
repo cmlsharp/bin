@@ -10,10 +10,8 @@
 dir=~/.dotfiles # dotfiles directory
 olddir=~/.dotfiles_old # old dotfiles backup directory
 files="zshrc vimrc tmux.conf vimperatorrc" # list of files/folders to symlink in homedir
-bold=$(tput bold)
-normal=$(tput sgr0)
 bold(){
-    echo "${bold}$@${normal}"
+    echo "$(tput bold)$@$(tput sgr0)"
 }
 pkg(){
     bold "Do you want to install your previous packages?"
@@ -34,14 +32,16 @@ pkg(){
             done
             } && bold "Done" || { bold "Failed; exit 1; }"
             sudo pacman -Syy --needed $(comm -12 <(pacman -Slq|sort) <(sort $dir/pacman_pkgs)) || exit 1
+            aur
             ;;
-        [Nn]|[Nn][Oo]) exit 0
+        [Nn]|[Nn][Oo]) bold "Moving on" 
             ;;
         *) bold "Sorry, that is not an acceptable response"
             pkg
             ;;
     esac
 }
+
 aur(){
     bold "Do you want to install AUR packages as well? [y/N]"
     read answer
@@ -66,7 +66,7 @@ aur(){
             fi
             yaourt -S --needed $(cat $dir/aur_pkgs)
             ;;
-        ""|[Nn]|[Nn][Oo])  exit 0 
+        ""|[Nn]|[Nn][Oo]) bold "Moving on" 
             ;;
         *) bold "Sorry, that is not an acceptable response"
             aur
@@ -91,8 +91,10 @@ for file in $files; do
     bold "Creating symlink to $file in home directory."
     ln -s $dir/$file ~/.$file
 done
-#Extra stuff
-bold "Setting up mpd for user $(whoami)... "
+
+pkg
+
+bold "Setting up mpd for user... "
 {
 mkdir -p ~/.config/mpd/playlists
 touch ~/.config/mpd/{database,log,pid,state,sticker,sql}
@@ -105,6 +107,3 @@ ranger --copy-config=all > /dev/null
 rm ~/.config/ranger/commands.py
 ln -s $dir/commands.py ~/.config/ranger/commands.py
 } && bold "Done" || bold "Failed"
-
-pkg
-aur
