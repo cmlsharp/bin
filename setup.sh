@@ -10,29 +10,35 @@
 dir=~/.dotfiles # dotfiles directory
 olddir=~/.dotfiles_old # old dotfiles backup directory
 files="zshrc vimrc tmux.conf vimperatorrc" # list of files/folders to symlink in homedir
+PS3="Please enter a number: "
+dotfilesrepo="crossroads1112/dotfiles-arch"
 bold(){
     echo "$(tput bold)$@$(tput sgr0)"
 }
+goback(){
+     read -p "All done. Press [ENTER] to go back to the main menu"
+     menu
+}
 pkg(){
     bold "Do you want to install your previous packages?"
+    printf "Answer: "
     read answer
     case $answer in 
         ""|[Yy]|[Yy][Ee][Ss]) 
             if grep -q "#\[multilib\]" /etc/pacman.conf; then
                 bold "Activating multilib repo... "
                 multilibline=$(grep -n "#\[multilib\]" /etc/pacman.conf | cut -d ':' -f1)
-                sudo sed -i "$multilibline,$(( $multilibline + 1 ))s/#//" /etc/pacman.conf && echo "Done" || { echo "Failed"; exit 1} # Uncomments multilib repo in /etc/pacman.conf
+                sudo sed -i "$multilibline,$(( $multilibline + 1 ))s/#//" /etc/pacman.conf # Uncomments multilib repo in /etc/pacman.conf
             fi
             bold "Adding infinality and pipelight repos..."
-            {
+            
             echo -e "[infinality-bundle]\nServer = http://bohoomil.com/repo/$arch\n\n[infinality-bundle-multilib]\nServer = http://bohoomil.com/repo/multilib/$arch\n\n[pipelight]\nServer = http://repos.fds-team.de/stable/arch/$arch" | sudo tee -a /etc/pacman.conf # Adds infinality, infinality-multilib and pipelight repos to /etc/pacman.conf
             for key in 962DDE58 E49CC0415DC2D5CA; do
                 sudo pacman-key -r $key
                 sudo pacman-key --lsign $key
             done
-            } && bold "Done" || { bold "Failed; exit 1; }"
-            sudo pacman -Syy --needed $(comm -12 <(pacman -Slq|sort) <(sort $dir/pacman_pkgs)) || exit 1
-            aur
+            sudo pacman -Syy --needed $(comm -12 <(pacman -Slq|sort) <(sort $dir/pacman_pkgs))
+            eval "pkg=1"
             ;;
         [Nn]|[Nn][Oo]) bold "Moving on" 
             ;;
@@ -40,16 +46,22 @@ pkg(){
             pkg
             ;;
     esac
+    goback
 }
 
 aur(){
+    if [[ $pkg -ne 1 ]]; then
+        read -p "You must install pacman packages first"
+        menu
+    fi
     bold "Do you want to install AUR packages as well? [y/N]"
+    printf "Answer: "
     read answer
     case $answer in 
         [Yy]|[Yy][Ee][Ss]) 
             if [[ ! -f /usr/bin/yaourt ]]; then
                 bold "Installing yaourt"
-                {
+                
                 cd
                 curl -O https://aur.archlinux.org/packages/pa/package-query/package-query.tar.gz
                 tar zxvf package-query.tar.gz
@@ -62,7 +74,7 @@ aur(){
                 makepkg -si
                 cd ..
                 rm  -rf ./package-query.tar.gz ./yaourt.tar.gz ./package-query ./yaourt
-                } && bold "Done" || { bold "Failed"; exit 1; }
+                
             fi
             yaourt -S --needed $(cat $dir/aur_pkgs)
             ;;
@@ -72,38 +84,80 @@ aur(){
             aur
             ;;
     esac
+    goback
+}
+configs(){
+    if [[ ! -d $dir || ! -d $dir/.git ]]; then
+        bold "Either dotfiles directory does not exist or there is no git repo there. Moving to ${dir}.bak"
+        mv $dir ${dir}.bak
+        mkdir -p $dir
+        cd $dir
+        bold "Setting up git repo"
+        git init
+        git remote add origin-https https://github.com/$dotfilesrepo
+        git remote add origin git@github.com:$dotfilesrepo 
+        git pull origin-https master
+    fi
+
+    bold "Creating $olddir for backup of any existing dotfiles in ~ ..."
+    mkdir -p $olddir
+    bold "Done"
+    
+    bold "Changing to the $dir directory ..."
+    cd $dir
+    bold "Done"
+    
+    for file in $files; do
+        bold "Moving any existing dotfiles from ~ to $olddir"
+        mv ~/.$file ~/.dotfiles_old/
+        bold "Creating symlink to $file in home directory."
+        ln -s $dir/$file ~/.$file
+    done
+    goback
 }
 
-# create dotfiles_old in homedir
-bold "Creating $olddir for backup of any existing dotfiles in ~ ..."
-mkdir -p $olddir
-bold "Done"
+music(){
+    bold "Setting up mpd for user... "
+    mkdir -p ~/.config/mpd/playlists
+    touch ~/.config/mpd/{database,log,pid,state,sticker,sql}
+    printf "db_file            \"~/.config/mpd/database\"\nlog_file           \"~/.config/mpd/log\"\n\nmusic_directory    \"~/Music\"\nplaylist_directory \"~/.config/mpd/playlists\"\npid_file           \"~/.config/mpd/pid\"\nstate_file         \"~/.config/mpd/state\"\nsticker_file       \"~/.config/mpd/sticker.sql\"" > ~/.config/mpd/mpd.conf
+    echo "Done"
+    goback
+} 
 
-# change to the dotfiles directory
-bold "Changing to the $dir directory ..."
-cd $dir
-bold "Done"
-
-# move any existing dotfiles in homedir to dotfiles_old directory, then create symlinks from the homedir to any files in the ~/dotfiles directory specified in $files
-for file in $files; do
-    bold "Moving any existing dotfiles from ~ to $olddir"
-    mv ~/.$file ~/.dotfiles_old/
-    bold "Creating symlink to $file in home directory."
-    ln -s $dir/$file ~/.$file
+rang(){
+    bold "Setting up ranger... "
+    ranger --copy-config=all > /dev/null
+    rm ~/.config/ranger/commands.py
+    ln -s $dir/commands.py ~/.config/ranger/commands.py
+    goback
+}
+menu(){
+clear
+echo "What do you want to do?"
+select i in "Reinstall packages" "Reinstall AUR packages" "Get dotfiles" "Setup mpd" "Set up ranger" "All of the above" Quit; do
+    case $i in
+        "Reinstall packages") pkg
+            ;;
+        "Reinstall AUR packages") aur
+            ;;
+        "Get dotfiles") configs 
+            ;;
+        "Setup mpd") music
+            ;;
+        "Set up rannger") rang
+            ;;
+        "All of the above") dotfiles
+            pkg
+            aur
+            mpd
+            ranger
+            ;;
+        Quit) exit 0
+            ;;
+        *) echo "Sorry, that isn't an acceptable response"
+            ;;
+    esac
 done
-
-pkg
-
-bold "Setting up mpd for user... "
-{
-mkdir -p ~/.config/mpd/playlists
-touch ~/.config/mpd/{database,log,pid,state,sticker,sql}
-printf "db_file            \"~/.config/mpd/database\"\nlog_file           \"~/.config/mpd/log\"\n\nmusic_directory    \"~/Music\"\nplaylist_directory \"~/.config/mpd/playlists\"\npid_file           \"~/.config/mpd/pid\"\nstate_file         \"~/.config/mpd/state\"\nsticker_file       \"~/.config/mpd/sticker.sql\"" > ~/.config/mpd/mpd.conf
-} && bold "Done" || bold "Failed"
-
-bold "Setting up ranger... "
-{
-ranger --copy-config=all > /dev/null
-rm ~/.config/ranger/commands.py
-ln -s $dir/commands.py ~/.config/ranger/commands.py
-} && bold "Done" || bold "Failed"
+}
+menu
