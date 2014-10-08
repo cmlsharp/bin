@@ -135,7 +135,7 @@ rang(){
 menu(){
 clear
 echo "What do you want to do?"
-select i in "Reinstall packages" "Reinstall AUR packages" "Get dotfiles" "Setup mpd" "Set up ranger" "All of the above" Quit; do
+select i in "Reinstall packages" "Reinstall AUR packages" "Get dotfiles" "Setup mpd" "Setup ranger" "All of the above" Quit; do
     case $i in
         "Reinstall packages") pkg
             ;;
@@ -145,7 +145,7 @@ select i in "Reinstall packages" "Reinstall AUR packages" "Get dotfiles" "Setup 
             ;;
         "Setup mpd") music
             ;;
-        "Set up rannger") rang
+        "Setup ranger") rang
             ;;
         "All of the above") dotfiles
             pkg
