@@ -30,7 +30,6 @@ else
             echo "lsb-release not found. Run ${0##*/} with the -d flag to manually specify distro."
             exit 1
         fi
-
     fi
 fi
 
