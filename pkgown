@@ -7,56 +7,45 @@
 #
 #########################################33
 distromsg="${0##*/} does not support your distrobution. Acceptable values are Arch, Ubuntu, Debian, Gentoo, Fedora, CentOS openSUSE. If your distro uses the same package manager as one of the above distros, you may specify it with the -d flag" 
-
-args(){
-    while [[ $(echo $1 | head -c 1) == "-" ]]; do
-        case $1 in 
-            -d) eval "DISTRIB_ID=${2,,}"
-                shift 2 
-                ;;
-            *) echo "Unrecognized argument: $1" 
-               exit 1
-                ;;
-        esac
-    done
-check $@
-}
-
-
-noargs(){
-   if [[ -f /etc/lsb-release ]]; then
-       eval ". /etc/lsb-release"
-       eval "DISTRIB_ID=${DISTRIB_ID,,}"
-       check $@
-   else 
-       echo "lsb-release not found. Run ${0##*/} with the -d flag to manually specify distro."
-       exit 1
-    fi
-}
-
-check(){
-    case $DISTRIB_ID in
-        arch) pkgcmd="pacman -Qo" ;;
-        ubuntu|debian)pkgcmd="dpkg -S" ;; 
-        gentoo)pkgcmd="equery belongs -e" ;;
-        fedora|centos)pkgcmd="yum whatprovides" ;;
-        opensuse) pkgcmd="zypper what-provides" ;;
-        *) echo "$distromsg" && exit 1 ;;
-    esac
-    
-    location=$(type -a $1 | grep "$i is /" | awk '{print $3}') 
-    if [[ $location ]]; then
-        eval "$pkgcmd $location"
-    else
-        echo "Package $1 not found"
-    fi
-}
 if [[ $# -lt 1 ]]; then
     echo "${0##*/} requires at least one argument"
+    exit 1
 else
-    if [[ $(echo $1 | head -c 1) == "-" ]]; then
-        args $@
+    if [[ $(echo $1 | head -c 1) == "-" ]]; then #Check for args
+        while [[ $(echo $1 | head -c 1) == "-" ]]; do
+            case $1 in 
+                -d) DISTRIB_ID=${2,,}
+                    shift 2 
+                    ;;
+                *) echo "Unrecognized argument: $1" 
+                   exit 1
+                    ;;
+            esac
+        done
     else
-        noargs $@
+        if [[ -f /etc/lsb-release ]]; then 
+            . /etc/lsb-release #Get distro name
+            DISTRIB_ID=${DISTRIB_ID,,} #Make lower case
+        else 
+            echo "lsb-release not found. Run ${0##*/} with the -d flag to manually specify distro."
+            exit 1
+        fi
+
     fi
+fi
+
+case $DISTRIB_ID in
+    arch) pkgcmd="pacman -Qo" ;; #Set $pkgcmd to package manager command to determine ownership of a file depending on distro
+    ubuntu|debian)pkgcmd="dpkg -S" ;; 
+    gentoo)pkgcmd="equery belongs -e" ;;
+    fedora|centos)pkgcmd="yum whatprovides" ;;
+    opensuse) pkgcmd="zypper what-provides" ;;
+    *) echo "$distromsg" && exit 1 ;;
+esac
+    
+location=$(type -a $1 | grep "$i is /" | awk '{print $3}') #Find location of binary
+if [[ $location ]]; then
+    eval "$pkgcmd $location" #Evaluate the #pkgcmd on the file stored in $location
+else
+    echo "Package $1 not found"
 fi
