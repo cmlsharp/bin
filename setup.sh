@@ -135,24 +135,16 @@ rang(){
 menu(){
 clear
 echo "What do you want to do?"
-select i in "Reinstall packages" "Reinstall AUR packages" "Get dotfiles" "Setup mpd" "Setup ranger" "All of the above" Quit; do
+select i in "Reinstall packages" "Reinstall AUR packages" "Get dotfiles" "Setup mpd" "Setup ranger" Quit; do
     case $i in
         "Reinstall packages") pkg
             ;;
-        "Reinstall AUR packages") aur
-            ;;
-        "Get dotfiles") configs 
-            ;;
-        "Setup mpd") music
-            ;;
-        "Setup ranger") rang
-            ;;
-        "All of the above") dotfiles
-            pkg
-            aur
-            mpd
-            ranger
-            ;;
+        "Reinstall AUR packages") aur ;; "Get dotfiles") configs 
+            ;; 
+        "Setup mpd") music 
+            ;; 
+        "Setup ranger") rang 
+            ;; 
         Quit) exit 0
             ;;
         *) echo "Sorry, that isn't an acceptable response"
