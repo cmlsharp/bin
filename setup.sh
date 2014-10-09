@@ -139,7 +139,9 @@ select i in "Reinstall packages" "Reinstall AUR packages" "Get dotfiles" "Setup 
     case $i in
         "Reinstall packages") pkg
             ;;
-        "Reinstall AUR packages") aur ;; "Get dotfiles") configs 
+        "Reinstall AUR packages") aur 
+            ;; 
+        "Get dotfiles") configs 
             ;; 
         "Setup mpd") music 
             ;; 
