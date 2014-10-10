@@ -5,8 +5,8 @@
 #########################################
 USAGE="${0##*/} [OPTIONS] FILE COMMENT\n\nOPTIONS:\n [-h --help ]\t\tPrint this help message\n [-r --remove]\t\tRemove file from repo\n [-d --dir ]\t\tSpecify local repo location (current directory by default)\n [-l --location]\tSpecify remote repo location (origin by default)\n [-b --branch]\t\tSpecify branch (master by default)"
 remove=0
-branch=origin
-location=master
+branch=master
+location=origin
 errmsg(){
     echo "$1" #Print message supplied to function
     exit 1 
