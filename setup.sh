@@ -20,70 +20,43 @@ goback(){
      menu
 }
 pkg(){
-    bold "Do you want to install your previous packages?"
-    printf "Answer: "
-    read answer
-    case $answer in 
-        ""|[Yy]|[Yy][Ee][Ss]) 
-            if grep -q "#\[multilib\]" /etc/pacman.conf; then
-                bold "Activating multilib repo... "
-                multilibline=$(grep -n "#\[multilib\]" /etc/pacman.conf | cut -d ':' -f1)
-                sudo sed -i "$multilibline,$(( $multilibline + 1 ))s/#//" /etc/pacman.conf # Uncomments multilib repo in /etc/pacman.conf
-            fi
-            bold "Adding infinality and pipelight repos..."
-            
-            echo -e "[infinality-bundle]\nServer = http://bohoomil.com/repo/$arch\n\n[infinality-bundle-multilib]\nServer = http://bohoomil.com/repo/multilib/$arch\n\n[pipelight]\nServer = http://repos.fds-team.de/stable/arch/$arch" | sudo tee -a /etc/pacman.conf # Adds infinality, infinality-multilib and pipelight repos to /etc/pacman.conf
-            for key in 962DDE58 E49CC0415DC2D5CA; do
-                sudo pacman-key -r $key
-                sudo pacman-key --lsign $key
-            done
-            sudo pacman -Syy --needed $(comm -12 <(pacman -Slq|sort) <(sort $dir/pacman_pkgs))
-            eval "pkg=1"
-            ;;
-        [Nn]|[Nn][Oo]) bold "Moving on" 
-            ;;
-        *) bold "Sorry, that is not an acceptable response"
-            pkg
-            ;;
-    esac
+    if grep -q "#\[multilib\]" /etc/pacman.conf; then
+        bold "Activating multilib repo... "
+        multilibline=$(grep -n "#\[multilib\]" /etc/pacman.conf | cut -d ':' -f1)
+        sudo sed -i "$multilibline,$(( $multilibline + 1 ))s/#//" /etc/pacman.conf # Uncomments multilib repo in /etc/pacman.conf
+    fi
+    bold "Adding infinality and pipelight repos..."
+    
+    echo -e "[infinality-bundle]\nServer = http://bohoomil.com/repo/\$arch\n\n[infinality-bundle-multilib]\nServer = http://bohoomil.com/repo/multilib/\$arch\n\n[pipelight]\nServer = http://repos.fds-team.de/stable/arch/\$arch" | sudo tee -a /etc/pacman.conf # Adds infinality, infinality-multilib and pipelight repos to /etc/pacman.conf
+
+    for key in 962DDE58 E49CC0415DC2D5CA; do
+        sudo pacman-key -r $key
+        sudo pacman-key --lsign $key
+    done
+
+    sudo pacman -Syy --needed $(comm -12 <(pacman -Slq|sort) <(sort $dir/pacman_pkgs))
     goback
 }
 
 aur(){
-    if [[ $pkg -ne 1 ]]; then
-        read -p "You must install pacman packages first"
-        menu
+    if [[ ! -f /usr/bin/yaourt ]]; then
+        bold "Installing yaourt"
+     
+        cd
+        curl -O https://aur.archlinux.org/packages/pa/package-query/package-query.tar.gz
+        tar zxvf package-query.tar.gz
+        cd package-query
+        makepkg -si
+        cd ..
+        curl -O https://aur.archlinux.org/packages/ya/yaourt/yaourt.tar.gz
+        tar zxvf yaourt.tar.gz
+        cd yaourt
+        makepkg -si
+        cd ..
+        rm  -rf ./package-query.tar.gz ./yaourt.tar.gz ./package-query ./yaourt
+        
     fi
-    bold "Do you want to install AUR packages as well? [y/N]"
-    printf "Answer: "
-    read answer
-    case $answer in 
-        [Yy]|[Yy][Ee][Ss]) 
-            if [[ ! -f /usr/bin/yaourt ]]; then
-                bold "Installing yaourt"
-                
-                cd
-                curl -O https://aur.archlinux.org/packages/pa/package-query/package-query.tar.gz
-                tar zxvf package-query.tar.gz
-                cd package-query
-                makepkg -si
-                cd ..
-                curl -O https://aur.archlinux.org/packages/ya/yaourt/yaourt.tar.gz
-                tar zxvf yaourt.tar.gz
-                cd yaourt
-                makepkg -si
-                cd ..
-                rm  -rf ./package-query.tar.gz ./yaourt.tar.gz ./package-query ./yaourt
-                
-            fi
-            yaourt -S --needed $(cat $dir/aur_pkgs)
-            ;;
-        ""|[Nn]|[Nn][Oo]) bold "Moving on" 
-            ;;
-        *) bold "Sorry, that is not an acceptable response"
-            aur
-            ;;
-    esac
+    yaourt -S --needed $(cat $dir/aur_pkgs)
     goback
 }
 configs(){
