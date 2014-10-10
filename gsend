@@ -5,14 +5,14 @@
 #########################################
 USAGE="${0##*/} [OPTIONS] FILE COMMENT\n\nOPTIONS:\n [-h --help ]\t\tPrint this help message\n [-r --remove]\t\tRemove file from repo\n [-d --dir ]\t\tSpecify local repo location (current directory by default)\n [-l --location]\tSpecify remote repo location (origin by default)\n [-b --branch]\t\tSpecify branch (master by default)"
 remove=0
-branch=master
-location=origin
-check(){
+branch=origin
+location=master
+errmsg(){
     echo "$1" #Print message supplied to function
     exit 1 
 }
 
-while [[ $(echo $1 | head -c 1) == "-" ]]; do #While the first supplied argument begins with a - run case statemtnt
+while [[ $(echo $1 | head -c 1) == "-" ]]; do 
     case $1 in 
         -h|--help) echo -e "$USAGE"
             exit 0
@@ -20,9 +20,9 @@ while [[ $(echo $1 | head -c 1) == "-" ]]; do #While the first supplied argument
          -r|--remove) remove=1 
             shift #Get rid of $1 and move $2 to $1
             ;;
-        -d|--dir) cd ~/$2 > /dev/null 2>&1 || check "No such directory" #If dir does not exist, run check function
-            test -d ./.git || check "No git repository exists in this directory" #If there is no .git folder, run check function
-            shift 2 #Get rid of both the -d option and the file name and move $3 to $1
+        -d|--dir) cd ~/$2 > /dev/null 2>&1 || errmsg "No such directory" #If dir does not exist, run errmsg function
+            test -d ./.git || errmsg "No git repository exists in this directory" #If there is no .git folder, run errmsg function
+            shift 2 #Get rid of both the -d option and the folder` name and move $3 to $1
             ;;
         -b|--branch) branch=$2
             shift 2
@@ -49,7 +49,7 @@ if [[ $remove == 0 ]]; then
 else
     git rm $1
 fi
-} 2> /dev/null || check "No such file in specified git repo" #Send stderr from the block of code to /dev/null. If either command that is run fails, run the check function.
+} 2> /dev/null || errmsg "No such file in specified git repo" #Send stderr from the block of code to /dev/null. If either command that is run fails, run the errmsg function.
 
 shift #Get rid of file name
 description=$@ #Set $description equal to all remaining arguments
