@@ -25,14 +25,16 @@ pkg(){
         multilibline=$(grep -n "#\[multilib\]" /etc/pacman.conf | cut -d ':' -f1)
         sudo sed -i "$multilibline,$(( $multilibline + 1 ))s/#//" /etc/pacman.conf # Uncomments multilib repo in /etc/pacman.conf
     fi
-    bold "Adding infinality and pipelight repos..."
-    
-    echo -e "[infinality-bundle]\nServer = http://bohoomil.com/repo/\$arch\n\n[infinality-bundle-multilib]\nServer = http://bohoomil.com/repo/multilib/\$arch\n\n[pipelight]\nServer = http://repos.fds-team.de/stable/arch/\$arch" | sudo tee -a /etc/pacman.conf # Adds infinality, infinality-multilib and pipelight repos to /etc/pacman.conf
-
+    bold "Adding infinality, pipelight repos and blackarch..."
+    curl -s http://blackarch.org/strap.sh | sudo sh
     for key in 962DDE58 E49CC0415DC2D5CA; do
         sudo pacman-key -r $key
         sudo pacman-key --lsign $key
     done
+
+    
+    echo -e "[infinality-bundle]\nServer = http://bohoomil.com/repo/\$arch\n\n[infinality-bundle-multilib]\nServer = http://bohoomil.com/repo/multilib/\$arch\n\n[pipelight]\nServer = http://repos.fds-team.de/stable/arch/\$arch\n[blackarch]\nServer = https://http://mirror.oss.maxcdn.com/blackarch/\$repo/os/\$arch" | sudo tee -a /etc/pacman.conf # Adds infinality, infinality-multilib and pipelight repos to /etc/pacman.conf
+
 
     sudo pacman -Syy --needed $(comm -12 <(pacman -Slq|sort) <(sort $dir/pacman_pkgs))
     goback
