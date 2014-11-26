@@ -29,6 +29,7 @@ pkg(){
     curl -s http://blackarch.org/strap.sh | sudo sh
     for key in 962DDE58 E49CC0415DC2D5CA; do
         sudo pacman-key -r $key
+        sudo pacman-key -f $key
         sudo pacman-key --lsign $key
     done
 
