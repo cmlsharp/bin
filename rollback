@@ -9,13 +9,14 @@
 log_path="/var/local/log/rollback"
 date=$(date "+%Y-%m-%d-%H%M%S")
 log_file="${log_path}/rollback_${date}.log"
+PS3="Choice: "
 
 if (( EUID != 0 )); then
     echo "This script must be run as root" 1>&2
     exit 1
 fi
 
-if [ !  -d "$log_path" ]; then #If log director does not exist, create it
+if [ !  -d "$log_path" ]; then #If log directory does not exist, create it
     mkdir -p $log_path
 fi
 
@@ -23,23 +24,29 @@ exec > >(tee -a "$log_file") #Log stdout and stderr to a file while still displa
 exec 2> >(tee -a "$log_file" >&2)
 
 clear
-echo 'Do you want to rollback a [d]aily snapshot or an [u]pgrade?'  
-read input
+menu(){
+echo "What do you want to rollback?"
+select input in 'Timeline snapshot' 'Upgrade'; do
+    case $input in 
 
-if  [[ $input == "u" ]]; then
-    clear
-    echo 'Undoing most recent upgrade'
-    pre=$(sudo snapper list --type pre-post | tail -n -1 | awk -F\| '{print $1}' | tr -d ' ') #Get number of most recent pre snapshot
-    snapper -v undochange $pre..$((pre+1)) #Undo the changes from $pre and the one right after it
+    'Upgrade')
+        clear
+        echo 'Undoing most recent upgrade'
+        pre=$(sudo snapper list --type pre-post | tail -n -1 | awk -F\| '{print $1}' | tr -d ' ') #Get number of most recent pre snapshot
+        snapper -v undochange $pre..$((pre+1)) #Undo the changes from $pre and the one right after it
+        ;;
 
-elif [[ $input == "d" ]]; then
+    'Timeline snapshot')
+        clear
+        snapper list --type single | awk -F\| '{print $1"|" $2}'| sed '1,3d' #Show a list of all single snapshots 
+        echo -en "\nNumber of the snapshot you like to return to: " 
+        read past
+        snapper -v undochange $past..0 #Undo change from sekected snapshot to now
+        ;; 
+    esac
+    read -p "All done, press [ENTER] to go back to the menu or Ctrl-C to exit"
     clear
-    snapper list --type single | awk -F\| '{print $1"|" $2}'| sed '1,3d' #Show a list of all single snapshots 
-    echo -en "\n Number of the snapshot you like to return to: " 
-    read past
-    snapper -v undochange $past..0 #Undo change from sekected snapshot to now
-    
-else
-    echo "$input is not an acceptable response"
-    
-fi
+    menu
+done
+}
+menu
