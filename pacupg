@@ -1,0 +1,79 @@
+#!/usr/bin/env bash
+#
+# Written by: crossroads1112
+#
+# Purpose: Take btrfs snapshots before and after a pacman -Syu
+#
+# Requirements: Btrfs (obviously), snapper, sudo, GNU coreutils (sed, grep etc.) and that your user is added into the ALLOW_USERS variable of your snapper config (/etc/snapper/configs/yourconfigname). This script assumes your snapper config is called 'root'. If needed, change this in the snp_cnfg variable below
+#
+###############################################################
+snp_cnfg=root
+bootbackupdir="/var/local/boot-backup/"
+log_path="/var/local/log/pacupg/"
+date=$(date "+%Y-%m-%d-%H%M%S")
+log_file="${log_path}/pacupg_${date}.log"
+green(){
+    echo -e "\e[0;32m$(tput bold)${@}$(tput bold)\e[0m"
+}
+while [[ $(echo $1 | head -c 1) == "-" ]]; do # Interpret any arguments starting with - to be flags
+    case $1 in
+        -b|--boot-backup) boot=1
+            shift # Remove -b argument. No particular reason for this, just cleanliness. Should I choose to add more arguments, this would be needed
+            ;;
+        *) echo "Unrecognized argument: $1"
+            exit 1
+            ;;
+    esac
+done
+
+ 
+[[ !  -d "$log_path" ]] && sudo mkdir -p $log_path # If log directory does not exist, create it
+
+quit() { # Run cleanup code upon exit or error
+    [[ -n "$1" ]] && green "> Error: $1, quitting!"
+
+    if [[ "$in_block" = "1" ]]; then
+        green "> WARNING: Aborting from pre/post snapshot block Do you want to remove pre snapshot $pre" 
+        printf "[Y/n]: "
+        read input
+        case $input in 
+            [Yy]|[Yy][Ee][Ss])sudo snapper delete $pre; exit 0;; 
+            [Nn]|[Nn][Oo]) green "> Okay. Leaving empty pre snapshot" ;;
+        esac 
+    fi
+
+    if [[ -n "$1" ]]; then exit 1; else exit 0; fi
+    }; trap quit EXIT 15 1 2
+trap 'quit "> Error detected at ${0##*/}:$LINENO"' ERR # If there is an error, pass message to quit function
+
+
+green "> Retrieving packages..."
+sudo pacman -Syuw && green "> Done" || exit 2 # Only pull down needed packages. Don't install
+
+pkgs=$(sed 's/-Sy/-S/' /usr/bin/checkupdates | source /dev/stdin)
+
+if grep linux < $(echo $pkgs) > /dev/null; then
+    green "Upgrade to the Linux kernel detected. Enabling backup of /boot"
+    boot=1
+fi
+
+echo -e "Errors (if any) during upgrade:\n" | sudo tee -a $log_file > /dev/null
+exec 2> >(sudo tee -a "$log_file" >&2)
+
+if [[ $boot == 1 ]]; then
+    [[ ! -d $bootbackupdir ]] && sudo mkdir -p $bootbackupdir # Make backup directory if it does not exist
+    green "> Backing up /boot" 
+    sudo rsync -av --delete /boot/ $bootbackupdir # Copy contents of /boot to directory set in $bootbackupdir and delete any extraneous files in the latter directory
+fi
+
+in_block=1
+pre=$(snapper create --type=pre --cleanup-algorithm=number --print-number --description="pacman -Syu") #Take snapshot and store snapshot number in $pre
+green "> New pre snapshot with number $pre"
+sudo pacman -Su # Upgrade packages
+echo
+
+post=$(snapper create --type=post --cleanup-algorithm=number --print-number --pre-number="$pre") # Take post snapshot and store number in $post
+green "> Snapshot block complete: $snp_cnfg/${pre}..${post}."
+echo -e "\nPackages upgraded: \n\n$pkgs" | sudo tee -a $log_file > /dev/null
+sudo sed -i '/Proceed with installation/d' $log_file 
+in_block=0
