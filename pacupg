@@ -55,11 +55,12 @@ trap 'quit "> Error detected at ${0##*/}:$LINENO"' ERR # If there is an error, p
 
 
 green "> Retrieving packages..."
-sudo pacman -Syuw && green "> Done" || exit 2 # Only pull down needed packages. Don't install
+sudo pacman -Syuw && green "> Done"  || exit 2 # Only pull down needed packages. Don't install
 
-pkgs=$(sed 's/-Sy/-S/' /usr/bin/checkupdates | source /dev/stdin)
+pkgs=$(sed 's/-Sy/-S/' /usr/bin/checkupdates | source /dev/stdin | sed '/^$/d')
+[[ -z $pkgs ]] && green "> Nothing to update. Aborting." && exit 2
 
-if grep linux < $(echo $pkgs) > /dev/null; then
+if grep -q linux < $(echo $pkgs);  then
     green "Upgrade to the Linux kernel detected. Enabling backup of /boot"
     boot=1
 fi
