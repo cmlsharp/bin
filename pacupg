@@ -13,7 +13,7 @@ log_path="/var/local/log/pacupg/"
 date=$(date "+%Y-%m-%d-%H%M%S")
 log_file="${log_path}/pacupg_${date}.log"
 green(){
-    echo -e "\e[0;32m$(tput bold)${@}$(tput bold)\e[0m"
+    echo -e "\e[0;32m$(tput bold)${@}$(tput sgr0)\e[0m"
 }
 bootbackup(){
     if [[ $boot == 1 ]]; then
