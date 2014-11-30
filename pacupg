@@ -13,12 +13,12 @@ log_path="/var/local/log/pacupg/"
 date=$(date "+%Y-%m-%d-%H%M%S")
 log_file="${log_path}/pacupg_${date}.log"
 green(){
-    echo -e "\e[0;32m$(tput bold)${@}$(tput sgr0)\e[0m"
+    echo -en "\e[0;32m$(tput bold)${@}$(tput sgr0)\e[0m"
 }
 bootbackup(){
     if mount | grep -q /boot && [[ $boot == 1 ]] || [[ $boot == 2 ]] ; then
         [[ ! -d $bootbackupdir ]] && sudo mkdir -p $bootbackupdir # Make backup directory if it does not exist
-        green "> Backing up /boot" 
+        green "> Backing up /boot\n" 
         sudo rsync -av --delete /boot/ $bootbackupdir # Copy contents of /boot to directory set in $bootbackupdir and delete any extraneous files in the latter directory
     fi
 }
@@ -40,31 +40,25 @@ done
 [[ !  -d "$log_path" ]] && sudo mkdir -p $log_path # If log directory does not exist, create it
 
 quit() { # Run cleanup code upon exit or error
-    [[ -n "$1" ]] && green "> Error: $1, quitting!"
-
     if [[ "$in_block" = "1" ]]; then
-        green "> WARNING: Aborting from pre/post snapshot block Do you want to remove pre snapshot $pre" 
-        printf "[Y/n]: "
+        green "> WARNING: Aborting from pre/post snapshot block Do you want to remove pre snapshot ${pre}? [Y/n]: "
         read input
         case $input in 
-            [Yy]|[Yy][Ee][Ss])sudo snapper delete $pre; exit 0;; 
-            [Nn]|[Nn][Oo]) green "> Okay. Leaving empty pre snapshot" ;;
+            ""|[Yy]|[Yy][Ee][Ss])sudo snapper delete $pre; green "> Snapshot removed\n"; in_block=0; exit;; 
+            [Nn]|[Nn][Oo]) green "> Okay. Leaving empty pre snapshot\n" ;;
         esac 
     fi
-
-    if [[ -n "$1" ]]; then exit 1; else exit 0; fi
-    }; trap quit EXIT 15 1 2
-trap 'quit "> Error detected at ${0##*/}:$LINENO"' ERR # If there is an error, pass message to quit function
+    }; trap quit EXIT ERR 15 1 2
 
 
-green "> Retrieving packages..."
-sudo pacman -Syuw && green "> Done"  || exit 2 # Only pull down needed packages. Don't install
+green "> Retrieving packages...\n"
+sudo pacman -Syyuw && green "> Done\n"  || exit 2 # Only pull down needed packages. Don't install
 
 pkgs=$(sed 's/-Sy/-S/' /usr/bin/checkupdates | source /dev/stdin | sed '/^$/d')
-[[ -z $pkgs ]] && green "> Nothing to update. Aborting." && exit 2
+[[ -z $pkgs ]] && green "> Nothing to update. Aborting.\n" && exit 2
 
-if grep -Eq "^linux$" < $(echo $pkgs);  then
-    green "Upgrade to the Linux kernel detected. Enabling backup of /boot"
+if grep -Eq "^linux$" <(echo $pkgs);  then
+    green "Upgrade to the Linux kernel detected. Enabling backup of /boot\n"
     boot=1
 fi
 
@@ -75,12 +69,12 @@ bootbackup
 
 in_block=1
 pre=$(snapper create --type=pre --cleanup-algorithm=number --print-number --description="pacman -Syu") #Take snapshot and store snapshot number in $pre
-green "> New pre snapshot with number $pre"
+green "> New pre snapshot with number ${pre}\n"
 sudo pacman -Su # Upgrade packages
 echo
 
 post=$(snapper create --type=post --cleanup-algorithm=number --print-number --pre-number="$pre") # Take post snapshot and store number in $post
-green "> Snapshot block complete: $snp_cnfg/${pre}..${post}."
+green "> Snapshot block complete: $snp_cnfg/${pre}..${post}.\n"
 echo -e "\nPackages upgraded: \n\n$pkgs" | sudo tee -a $log_file > /dev/null
 sudo sed -i '/Proceed with installation/d' $log_file 
 in_block=0
