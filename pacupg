@@ -4,7 +4,7 @@
 #
 # Purpose: Take btrfs snapshots before and after a pacman -Syu
 #
-# Requirements: Btrfs (obviously), snapper, sudo, GNU coreutils (sed, grep etc.) and that your user is added into the ALLOW_USERS variable of your snapper config (/etc/snapper/configs/yourconfigname). This script assumes your snapper config is called 'root'. If needed, change this in the snp_cnfg variable below
+# Requirements: Btrfs (obviously), snapper, sudo, rsync, GNU coreutils (sed, grep etc.) and that your user is added into the ALLOW_USERS variable of your snapper config (/etc/snapper/configs/yourconfigname). This script assumes your snapper config is called 'root'. If needed, change this in the snp_cnfg variable below
 #
 ###############################################################
 snp_cnfg=root
