@@ -16,7 +16,7 @@ green(){
     echo -e "\e[0;32m$(tput bold)${@}$(tput sgr0)\e[0m"
 }
 bootbackup(){
-    if [[ $boot == 1 ]]; then
+    if mount | grep -q /boot && [[ $boot == 1 ]] || [[ $boot == 2 ]] ; then
         [[ ! -d $bootbackupdir ]] && sudo mkdir -p $bootbackupdir # Make backup directory if it does not exist
         green "> Backing up /boot" 
         sudo rsync -av --delete /boot/ $bootbackupdir # Copy contents of /boot to directory set in $bootbackupdir and delete any extraneous files in the latter directory
@@ -24,8 +24,11 @@ bootbackup(){
 }
 while [[ $(echo $1 | head -c 1) == "-" ]]; do # Interpret any arguments starting with - to be flags
     case $1 in
-        -b|--boot-backup) boot=1
+        -b|--boot-backup) boot=2
             shift # Remove -b argument. No particular reason for this, just cleanliness. Should I choose to add more arguments, this would be needed
+            ;;
+        -h|--help) echo -e "${0##*/}: [OPTIONS]\n\nOPTIONS:\n [-h --help ]\t\t\tPrint this help message\n [-b --boot-backup ]\t\tForce backup of boot to $bootbackupdir"
+            exit 0
             ;;
         *) echo "Unrecognized argument: $1"
             exit 1
@@ -60,7 +63,7 @@ sudo pacman -Syuw && green "> Done"  || exit 2 # Only pull down needed packages.
 pkgs=$(sed 's/-Sy/-S/' /usr/bin/checkupdates | source /dev/stdin | sed '/^$/d')
 [[ -z $pkgs ]] && green "> Nothing to update. Aborting." && exit 2
 
-if grep -q linux < $(echo $pkgs);  then
+if grep -Eq "^linux$" < $(echo $pkgs);  then
     green "Upgrade to the Linux kernel detected. Enabling backup of /boot"
     boot=1
 fi
