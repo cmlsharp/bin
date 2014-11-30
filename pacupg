@@ -15,6 +15,13 @@ log_file="${log_path}/pacupg_${date}.log"
 green(){
     echo -e "\e[0;32m$(tput bold)${@}$(tput bold)\e[0m"
 }
+bootbackup(){
+    if [[ $boot == 1 ]]; then
+        [[ ! -d $bootbackupdir ]] && sudo mkdir -p $bootbackupdir # Make backup directory if it does not exist
+        green "> Backing up /boot" 
+        sudo rsync -av --delete /boot/ $bootbackupdir # Copy contents of /boot to directory set in $bootbackupdir and delete any extraneous files in the latter directory
+    fi
+}
 while [[ $(echo $1 | head -c 1) == "-" ]]; do # Interpret any arguments starting with - to be flags
     case $1 in
         -b|--boot-backup) boot=1
@@ -60,11 +67,7 @@ fi
 echo -e "Errors (if any) during upgrade:\n" | sudo tee -a $log_file > /dev/null
 exec 2> >(sudo tee -a "$log_file" >&2)
 
-if [[ $boot == 1 ]]; then
-    [[ ! -d $bootbackupdir ]] && sudo mkdir -p $bootbackupdir # Make backup directory if it does not exist
-    green "> Backing up /boot" 
-    sudo rsync -av --delete /boot/ $bootbackupdir # Copy contents of /boot to directory set in $bootbackupdir and delete any extraneous files in the latter directory
-fi
+bootbackup
 
 in_block=1
 pre=$(snapper create --type=pre --cleanup-algorithm=number --print-number --description="pacman -Syu") #Take snapshot and store snapshot number in $pre
@@ -77,3 +80,4 @@ green "> Snapshot block complete: $snp_cnfg/${pre}..${post}."
 echo -e "\nPackages upgraded: \n\n$pkgs" | sudo tee -a $log_file > /dev/null
 sudo sed -i '/Proceed with installation/d' $log_file 
 in_block=0
+bootbackup
