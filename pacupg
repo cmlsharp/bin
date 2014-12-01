@@ -48,7 +48,8 @@ quit() { # Run cleanup code upon exit or error
             [Nn]|[Nn][Oo]) green "> Okay. Leaving empty pre snapshot\n" ;;
         esac 
     fi
-    }; trap quit EXIT ERR 15 1 2
+} 
+trap quit EXIT ERR 15 1 2
 
 
 green "> Retrieving packages...\n"
