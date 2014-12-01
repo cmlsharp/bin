@@ -33,10 +33,10 @@ while [[ $(echo $1 | head -c 1) == "-" ]]; do # Interpret any arguments starting
         *) echo "Unrecognized argument: $1"
             exit 1
             ;;
-    esac
+    esac  
 done
-
  
+
 [[ !  -d "$log_path" ]] && sudo mkdir -p $log_path # If log directory does not exist, create it
 
 quit() { # Run cleanup code upon exit or error
@@ -51,11 +51,12 @@ quit() { # Run cleanup code upon exit or error
 } 
 trap quit EXIT ERR 15 1 2
 
-
+green "> Gathering info... Please wait\n"
+pkgs=$(/usr/bin/checkupdates |  sed '/^$/d')
 green "> Retrieving packages...\n"
-sudo pacman -Syyuw && green "> Done\n"  || exit 2 # Only pull down needed packages. Don't install
+sudo pacman -Syuw && green "> Done\n"  || exit 2 # Only pull down needed packages. Don't install
 
-pkgs=$(sed 's/-Sy/-S/' /usr/bin/checkupdates | source /dev/stdin | sed '/^$/d')
+#pkgs=$(sed 's/-Sy/-S/' /usr/bin/checkupdates | source /dev/stdin | sed '/^$/d')
 [[ -z $pkgs ]] && green "> Nothing to update. Aborting.\n" && exit 2
 
 if grep -Eq "^linux$" <(echo $pkgs);  then
@@ -75,7 +76,7 @@ sudo pacman -Su # Upgrade packages
 echo
 
 post=$(snapper create --type=post --cleanup-algorithm=number --print-number --pre-number="$pre") # Take post snapshot and store number in $post
-green "> Snapshot block complete: $snp_cnfg/${pre}..${post}.\n"
+green "> Snapshot block complete: $snp_cnfg/${pre}..${post}\n"
 echo -e "\nPackages upgraded: \n\n$pkgs" | sudo tee -a $log_file > /dev/null
 sudo sed -i '/Proceed with installation/d' $log_file 
 in_block=0
