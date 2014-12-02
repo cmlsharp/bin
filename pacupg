@@ -19,7 +19,7 @@ bootbackup(){
     if mount | grep -q /boot && [[ $boot == 1 ]] || [[ $boot == 2 ]] ; then
         [[ ! -d $bootbackupdir ]] && sudo mkdir -p $bootbackupdir # Make backup directory if it does not exist
         green "> Backing up /boot\n" 
-        sudo rsync -av --delete /boot/ $bootbackupdir # Copy contents of /boot to directory set in $bootbackupdir and delete any extraneous files in the latter directory
+        sudo rsync -av --delete /boot/ $bootbackupdir && green "> Done\n" # Copy contents of /boot to directory set in $bootbackupdir and delete any extraneous files in the latter directory
     fi
 }
 while [[ $(echo $1 | head -c 1) == "-" ]]; do # Interpret any arguments starting with - to be flags
@@ -55,7 +55,7 @@ green "> Gathering info... Please wait\n"
 pkgs=$(/usr/bin/checkupdates |  sed '/^$/d')
 if [[ -z $pkgs ]]; then
     if [[ $boot == 2 ]]; then
-        bootbackup && green "> Done\n"
+        bootbackup 
     fi 
     green "> Nothing to update. Aborting.\n" && exit 2
 fi
