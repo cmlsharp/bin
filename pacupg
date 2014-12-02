@@ -53,11 +53,16 @@ trap quit EXIT ERR 15 1 2
 
 green "> Gathering info... Please wait\n"
 pkgs=$(/usr/bin/checkupdates |  sed '/^$/d')
+if [[ -z $pkgs ]]; then
+    if [[ $boot == 2 ]]; then
+        bootbackup && green "> Done\n"
+    fi 
+    green "> Nothing to update. Aborting.\n" && exit 2
+fi
 green "> Retrieving packages...\n"
 sudo pacman -Syuw && green "> Done\n"  || exit 2 # Only pull down needed packages. Don't install
 
 #pkgs=$(sed 's/-Sy/-S/' /usr/bin/checkupdates | source /dev/stdin | sed '/^$/d')
-[[ -z $pkgs ]] && green "> Nothing to update. Aborting.\n" && exit 2
 
 if grep -Eq "^linux$" <(echo $pkgs);  then
     green "Upgrade to the Linux kernel detected. Enabling backup of /boot\n"
