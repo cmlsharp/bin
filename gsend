@@ -27,8 +27,9 @@ while [[ $(echo $1 | head -c 1) == "-" ]]; do
         -b|--branch) branch=$2
             shift 2
             ;;
-        -l|--location) location=$2
-            shift 2
+        -l|--location) shift
+            location=$1
+            shift 
             ;;
         -*) echo "Unrecognized argument: $1"
             echo -e $USAGE
