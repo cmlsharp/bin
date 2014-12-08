@@ -4,7 +4,7 @@
 #
 # Purpose: Take btrfs snapshots before and after a pacman -Syu
 #
-# Requirements: Btrfs (obviously), snapper, sudo, rsync, GNU coreutils (sed, grep etc.) and that your user is added into the ALLOW_USERS variable of your snapper config (/etc/snapper/configs/yourconfigname). This script assumes your snapper config is called 'root'. If needed, change this in the snp_cnfg variable below
+# Requirements: Btrfs (obviously), snapper, sudo, rsync, GNU coreutils (sed, grep etc.), package-query (optional) and that your user is added into the ALLOW_USERS variable of your snapper config (/etc/snapper/configs/yourconfigname). This script assumes your snapper config is called 'root'. If needed, change this in the snp_cnfg variable below
 #
 ###############################################################
 snp_cnfg=root
@@ -19,7 +19,12 @@ bootbackup(){
     if mount | grep -q /boot && [[ $boot == 1 ]] || [[ $boot == 2 ]] ; then
         [[ ! -d $bootbackupdir ]] && sudo mkdir -p $bootbackupdir # Make backup directory if it does not exist
         green "> Backing up /boot\n" 
-        sudo rsync -av --delete /boot/ $bootbackupdir && green "> Done\n" # Copy contents of /boot to directory set in $bootbackupdir and delete any extraneous files in the latter directory
+        if sudo rsync -av --delete /boot/ $bootbackupdir > /dev/null 2>$log_file; then # Copy contents of /boot to directory set in $bootbackupdir and delete any extraneous files in the latter directory
+            green "> Done\n"
+        else 
+            echo "Errors from bootbackup: " >> $log_file
+            green "> Boot backup failed. Aborting\n" | tee -a $log_file 1>&2
+        fi
     fi
 }
 while [[ $(echo $1 | head -c 1) == "-" ]]; do # Interpret any arguments starting with - to be flags
@@ -51,17 +56,21 @@ quit() { # Run cleanup code upon exit or error
 } 
 trap quit EXIT ERR 15 1 2
 
-green "> Gathering info... Please wait\n"
-pkgs=$(/usr/bin/checkupdates |  sed '/^$/d')
+green "> Retrieving packages...\n"
+sudo pacman -Syuw && green "> Done\n"  || exit 2 # Only pull down needed packages. Don't install
+
+if [[ -f /usr/bin/package-query ]]; then
+    pkgs=$(package-query -SQuf "%n %l > %V")
+else
+    pkgs=$(pacman -Qu | sed '/^$/d')
+fi
+
 if [[ -z $pkgs ]]; then
     if [[ $boot == 2 ]]; then
         bootbackup 
     fi 
     green "> Nothing to update. Aborting.\n" && exit 2
 fi
-green "> Retrieving packages...\n"
-sudo pacman -Syuw && green "> Done\n"  || exit 2 # Only pull down needed packages. Don't install
-
 #pkgs=$(sed 's/-Sy/-S/' /usr/bin/checkupdates | source /dev/stdin | sed '/^$/d')
 
 if grep -Eq "^linux$" <(echo $pkgs);  then
@@ -77,7 +86,7 @@ bootbackup
 in_block=1
 pre=$(snapper create --type=pre --cleanup-algorithm=number --print-number --description="pacman -Syu") #Take snapshot and store snapshot number in $pre
 green "> New pre snapshot with number ${pre}\n"
-sudo pacman -Su # Upgrade packages
+sudo pacman -Su --noconfirm # Upgrade packages
 echo
 
 post=$(snapper create --type=post --cleanup-algorithm=number --print-number --pre-number="$pre") # Take post snapshot and store number in $post
