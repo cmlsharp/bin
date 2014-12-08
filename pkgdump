@@ -21,7 +21,7 @@ pacman -Qqm > $dotfilesdir/aur_pkgs #Dump package list not from oficial repos
 cd $dotfilesdir
 
 for i in pacman_pkgs aur_pkgs; do 
-    if [[ ! -z $(git diff $i) ]]; then #Only run git add if there is a difference between local and remote files
+    if [[ -n $(git diff $i) ]]; then #Only run git add if there is a difference between local and remote files
         git add $i
         change=1
     else
