@@ -9,9 +9,9 @@
 ##############################
 dir=~/.dotfiles # dotfiles directory
 olddir=~/.dotfiles_old # old dotfiles backup directory
-files="zshrc vimrc tmux.conf vimperatorrc" # list of files/folders to symlink in homedir
+files="zshrc vimrc tmux.conf vimperatorrc zsh_plugins vim" # list of files/folders to symlink in homedir
 PS3="Please enter a number: "
-dotfilesrepo="crossroads1112/dotfiles-arch"
+dotfilesrepo="crossroads1112/dotfiles"
 bold(){
     echo "$(tput bold)$@$(tput sgr0)"
 }
