@@ -15,11 +15,17 @@ log_file="${log_path}/pacupg_${date}.log"
 green(){
     echo -en "\e[0;32m$(tput bold)${@}$(tput sgr0)\e[0m"
 }
+for i in btrfs package-query snapper; do
+    if [[ ! -f /usr/bin/$i ]]; then 
+        green "> $i not found. This script requires $i to function.\n"
+        exit 1
+    fi
+done
 bootbackup(){
     if mount | grep -q /boot && [[ $boot == 1 ]] || [[ $boot == 2 ]] ; then
         [[ ! -d $bootbackupdir ]] && sudo mkdir -p $bootbackupdir # Make backup directory if it does not exist
         green "> Backing up /boot\n" 
-        if sudo rsync -av --delete /boot/ $bootbackupdir > /dev/null 2>$log_file; then # Copy contents of /boot to directory set in $bootbackupdir and delete any extraneous files in the latter directory
+        if sudo rsync -av --delete /boot/ $bootbackupdir > /dev/null 2> >(sudo tee -a $log_file); then # Copy contents of /boot to directory set in $bootbackupdir and delete any extraneous files in the latter directory
             green "> Done\n"
         else 
             echo "Errors from bootbackup: " >> $log_file
@@ -50,7 +56,7 @@ quit() { # Run cleanup code upon exit or error
         read input
         case $input in 
             ""|[Yy]|[Yy][Ee][Ss])sudo snapper delete $pre; green "> Snapshot removed\n"; in_block=0; exit;; 
-            [Nn]|[Nn][Oo]) green "> Okay. Leaving empty pre snapshot\n" ;;
+            [Nn]|[Nn][Oo]) green "> Okay. Leaving empty pre snapshot\n"; in_block=0 ;;
         esac 
     fi
 } 
@@ -59,12 +65,7 @@ trap quit EXIT ERR 15 1 2
 green "> Retrieving packages...\n"
 sudo pacman -Syuw && green "> Done\n"  || exit 2 # Only pull down needed packages. Don't install
 
-if [[ -f /usr/bin/package-query ]]; then
-    pkgs=$(package-query -SQuf "%n %l > %V")
-else
-    pkgs=$(pacman -Qu | sed '/^$/d')
-fi
-
+pkgs=$(package-query -SQuf "%n-%l -> %V\n")
 if [[ -z $pkgs ]]; then
     if [[ $boot == 2 ]]; then
         bootbackup 
@@ -72,8 +73,7 @@ if [[ -z $pkgs ]]; then
     green "> Nothing to update. Aborting.\n" && exit 2
 fi
 #pkgs=$(sed 's/-Sy/-S/' /usr/bin/checkupdates | source /dev/stdin | sed '/^$/d')
-
-if grep -Eq "^linux$" <(echo $pkgs);  then
+if grep "linux-[0-9]" <(echo $pkgs);  then
     green "Upgrade to the Linux kernel detected. Enabling backup of /boot\n"
     boot=1
 fi
