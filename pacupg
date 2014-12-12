@@ -6,6 +6,14 @@
 #
 # Requirements: Btrfs (obviously), snapper, sudo, rsync, GNU coreutils (sed, grep etc.), package-query (optional) and that your user is added into the ALLOW_USERS variable of your snapper config (/etc/snapper/configs/yourconfigname). This script assumes your snapper config is called 'root'. If needed, change this in the snp_cnfg variable below
 #
+#
+# What this script does:
+#
+# Wraps package upgrade in btrfs snapshots
+# If /boot is on a separate partition, and the kernel is being upgraded, it backs up /boot (command line flag also available)
+# Logging of all errors and a list of upgraded packages (with version numbers pre and post upgrade)
+# If upgrade is interupted, offers to delete pre snapshot
+#
 ###############################################################
 snp_cnfg=root
 bootbackupdir="/var/local/boot-backup/"
@@ -21,6 +29,7 @@ for i in btrfs package-query snapper; do
         exit 1
     fi
 done
+
 bootbackup(){
     if mount | grep -q /boot && [[ $boot == 1 ]] || [[ $boot == 2 ]] ; then
         [[ ! -d $bootbackupdir ]] && sudo mkdir -p $bootbackupdir # Make backup directory if it does not exist
@@ -33,6 +42,7 @@ bootbackup(){
         fi
     fi
 }
+
 while [[ $(echo $1 | head -c 1) == "-" ]]; do # Interpret any arguments starting with - to be flags
     case $1 in
         -b|--boot-backup) boot=2
@@ -47,7 +57,6 @@ while [[ $(echo $1 | head -c 1) == "-" ]]; do # Interpret any arguments starting
     esac  
 done
  
-
 [[ !  -d "$log_path" ]] && sudo mkdir -p $log_path # If log directory does not exist, create it
 
 quit() { # Run cleanup code upon exit or error
@@ -72,7 +81,7 @@ if [[ -z $pkgs ]]; then
     fi 
     green "> Nothing to update. Aborting.\n" && exit 2
 fi
-#pkgs=$(sed 's/-Sy/-S/' /usr/bin/checkupdates | source /dev/stdin | sed '/^$/d')
+
 if grep "linux-[0-9]" <(echo $pkgs);  then
     green "Upgrade to the Linux kernel detected. Enabling backup of /boot\n"
     boot=1
