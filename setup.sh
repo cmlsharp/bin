@@ -9,7 +9,7 @@
 ##############################
 dir=~/.dotfiles # dotfiles directory
 olddir=~/.dotfiles_old # old dotfiles backup directory
-files="zshrc vimrc tmux.conf vimperatorrc zsh_plugins vim" # list of files/folders to symlink in homedir
+files="zshrc vimrc tmux.conf vimperatorrc zsh_plugins vim mailcap mutt muttrc" # list of files/folders to symlink in homedir
 PS3="Please enter a number: "
 dotfilesrepo="crossroads1112/dotfiles"
 bold(){
@@ -74,6 +74,11 @@ configs(){
         git remote add origin git@github.com:$dotfilesrepo 
         git pull origin-https master
     fi
+    bold "Decrypting mutt passwords"
+    bcrypt $dir/mypw.gpg.bfe
+    cp $dir/mypw.gpg ~/.mypw.gpg
+    bold "Reencrypting muyy passwords"
+    bcrypt $dir/mypw.gpg
 
     bold "Creating $olddir for backup of any existing dotfiles in ~ ..."
     mkdir -p $olddir
