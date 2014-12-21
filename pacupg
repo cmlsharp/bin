@@ -25,38 +25,40 @@ depsdir=/tmp/pacupg-deps
 msg(){
     echo -en "\e[0;32m$(tput bold)> ${@}$(tput sgr0)\e[0m"
 }
-# Make sure root is btrfs
-if [[ $(mount | grep ' / ' | awk -F'type ' '{print $2}' | cut -d' ' -f1) != "btrfs" ]] > /dev/null; then
-    msg "Root not btrfs. Aborting\n"
-    exit 1
-fi
 
-# Check for deps
-for i in package-query snapper; do
-    if [[ ! -f $(type -p $i) ]]; then 
-        msg "$i not found. This script requires $i to function.\n"
-        msg "Would you like to install it? [Y/n] "
-        read input
-        case $input in
-            ""|[Yy][Ee][Ss]|[Yy]) 
-                if [[ $i == "package-query" ]]; then
-                    mkdir -p $depsdir
-                    cd $depsdir
-                    curl -O https://aur.archlinux.org/packages/pa/package-query/package-query.tar.gz
-                    tar zxvf package-query.tar.gz
-                    cd package-query
-                    makepkg -si && msg "Done\n\n" || exit 1
-                    cd
-                else
-                    sudo pacman -S $i || exit 1
-                fi
-                ;;
-            [Nn][Oo]|[Nn]|*) msg "Aborting\n" && exit 1
-                ;;
-        esac
+depscheck(){
+    # Make sure root is btrfs
+    if [[ $(mount | grep ' / ' | awk -F'type ' '{print $2}' | cut -d' ' -f1) != "btrfs" ]] > /dev/null; then
+        msg "Root not btrfs. Aborting\n"
+        exit 1
     fi
-done
-
+    # Install needed deps
+    for i in package-query snapper rsync; do
+        if [[ ! -f $(type -p $i) ]]; then 
+            msg "$i not found. This script requires $i to function.\n"
+            msg "Would you like to install it? [Y/n] "
+            read input
+            case $input in
+                ""|[Yy][Ee][Ss]|[Yy]) 
+                    if [[ $i == "package-query" ]]; then
+                        mkdir -p $depsdir
+                        cd $depsdir
+                        curl -O https://aur.archlinux.org/packages/pa/package-query/package-query.tar.gz
+                        tar zxvf package-query.tar.gz
+                        cd package-query
+                        makepkg -si && msg "Done\n" || exit 1
+                        cd
+                    else
+                        sudo pacman -S $i && msg "Done\n" || exit 1
+                    fi
+                    ;;
+                [Nn][Oo]|[Nn]|*) msg "Aborting\n" && exit 1
+                    ;;
+            esac
+            depscheck
+        fi
+    done
+}
 bootbackup(){
     if mount | grep -q /boot && [[ $boot == 1 ]] || [[ $boot == 2 ]] ; then
         [[ ! -d $bootbackupdir ]] && sudo mkdir -p $bootbackupdir # Make backup directory if it does not exist
@@ -69,7 +71,7 @@ bootbackup(){
         fi
     fi
 }
-
+depscheck
 while [[ $(echo $1 | head -c 1) == "-" ]]; do # Interpret any arguments starting with - to be flags
     case $1 in
         -b|--boot-backup) boot=2
