@@ -4,7 +4,7 @@ pkgver=r3.f23a65b
 pkgrel=1
 pkgdesc="Scripts to better integrate pacman and btrfs"
 arch=('any')
-url="http://github.com/crossroads1112/pacupg"
+url="https://github.com/crossroads1112/bin/tree/master/pacupg"
 license=('GPL')
 depends=('pacman' 'bash' 'package-query' 'rsync' 'snapper' 'btrfs-progs' 'coreutils')
 makedepends=()
@@ -12,7 +12,7 @@ source=(git+https://github.com/crossroads1112/bin.git)
 md5sums=(SKIP)
 
 pkgver() {
-  cd "$pkgname"
+  cd "bin"
   printf "r%s.%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)"
 }
 
