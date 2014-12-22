@@ -4,7 +4,7 @@
 #
 # Purpose: Take btrfs snapshots before and after a pacman -Syu
 #
-# Requirements: Btrfs (obviously), snapper, sudo, rsync, GNU coreutils (sed, grep etc.), package-query (optional) and that your user is added into the ALLOW_USERS variable of your snapper config (/etc/snapper/configs/yourconfigname). This script assumes your snapper config is called 'root'. If needed, change this in the snp_cnfg variable below
+# Requirements: Btrfs (obviously), snapper, sudo, rsync, GNU coreutils (sed, grep etc.), package-query (optional) and that your user is added into the ALLOW_USERS variable of your snapper config (/etc/snapper/configs/yourconfigname). This script assumes your snapper config is called 'root'. If needed, change this in the snpr_cnfg variable below
 #
 #
 # What this script does:
@@ -129,7 +129,7 @@ sudo pacman -Su --noconfirm # Upgrade packages
 echo
 
 post=$(snapper create --type=post --cleanup-algorithm=number --print-number --pre-number="$pre") # Take post snapshot and store number in $post
-msg "Snapshot block complete: $snp_cnfg/${pre}..${post}\n"
+msg "Snapshot block complete: $snpr_cnfg/${pre}..${post}\n"
 echo -e "\nPackages upgraded: \n\n$pkgs" | sudo tee -a $log_file > /dev/null
 sudo sed -i '/Proceed with installation/d' $log_file 
 in_block=0

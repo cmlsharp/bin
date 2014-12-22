@@ -1,0 +1,18 @@
+.TH PACUPG 1
+.SH NAME
+pacupg \- wrap upgrades in btrfs snapshots with optional backups of /boot
+.SH SYNOPSYS
+.B pacupg
+[\fB\-h \-\-help\fR]
+[\fB\-b \-\-boot\-backup\fR]
+.SH DESCRIPTION
+.B pacupg
+wrap upgrades in btrfs snapshots with optional backups of /boot (happens automatically when kernel updae detected)
+.SH OPTIONS
+.TP
+.BR \-n ", "\-\-help\fR
+Display help message
+.TP
+.BR \-b ", "\-\-boot\-backup\fR
+Force boot backup even if /boot is not on a separate partition
+
