@@ -7,7 +7,9 @@ pacupg \- wrap upgrades in btrfs snapshots with optional backups of /boot
 [\fB\-b \-\-boot\-backup\fR]
 .SH DESCRIPTION
 .B pacupg
-wrap upgrades in btrfs snapshots with optional backups of /boot (happens automatically when kernel updae detected)
+wrap upgrades in btrfs snapshots with optional backups of /boot (happens automatically when kernel update detected)
+.TP
+The script logs every upgraded package (with version numbers) to /var/local/log/pacupg/
 .SH OPTIONS
 .TP
 .BR \-n ", "\-\-help\fR
