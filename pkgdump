@@ -15,8 +15,8 @@ if [[ ! -d $dotfilesdir/.git ]];then
     exit 1
 fi
 
-pacman -Qqn > $dotfilesdir/pacman_pkgs #Dump package list from official repos
-pacman -Qqm > $dotfilesdir/aur_pkgs #Dump package list not from oficial repos
+pacman -Qqne > $dotfilesdir/pacman_pkgs #Dump package list from official repos
+pacman -Qqme > $dotfilesdir/aur_pkgs #Dump package list not from oficial repos
 
 cd $dotfilesdir
 
