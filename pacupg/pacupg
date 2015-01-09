@@ -149,7 +149,7 @@ if [[ -z $pkgs ]]; then
         bootbackup 
     fi 
     if [[ $aur == 1 ]]; then
-        aur && { msg "Done\n"; exit 0; } || exit 1
+        aur && { msg "Done\n"; exit 0; }
     fi
     msg "Nothing to update. Aborting.\n" && exit 2
 fi
@@ -177,5 +177,5 @@ sudo sed -i '/Proceed with installation/d' $log_file
 in_block=0
 bootbackup
 if [[ $aur == 1 ]]; then
-    aur && msg "Done" || exit 1
+    aur && msg "Done" 
 fi
