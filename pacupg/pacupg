@@ -13,6 +13,7 @@
 # If /boot is on a separate partition, and the kernel is being upgraded, it backs up /boot (command line flag also available)
 # Log of all errors and a list of upgraded packages (with version numbers pre and post upgrade)
 # If upgrade is interupted, offers to delete pre snapshot
+# Optionally upgrades AUR packages
 #
 ###############################################################
 snpr_cnfg=root
@@ -21,6 +22,9 @@ log_path="/var/local/log/pacupg/"
 date=$(date "+%Y-%m-%d-%H%M%S")
 log_file="${log_path}/pacupg_${date}.log"
 depsdir=/tmp/pacupg-deps
+helpmsg="${0##*/}: [OPTIONS]\n\nOPTIONS:\n -h\t\tPrint this help message\n -b\t\tForce backup of boot to ${bootbackupdir}\n -a\t\tUpgrade AUR packages as well (experimental) (requires pacaur)"
+
+pacaurconfig=/etc/xdg/pacaur/config
 
 msg(){
     echo -en "\e[0;32m$(tput bold)> ${@}$(tput sgr0)\e[0m"
@@ -71,19 +75,47 @@ bootbackup(){
         fi
     fi
 }
+aur(){
+    msg "This feature is still experimental"
+    msg "Beginning AUR upgrade\n"
+    if ! which pacaur; then
+        msg "pacaur not found. Aborting"
+        exit 1
+    fi
+    source $pacaurconfig
+
+    if [[ -z $builddir ]]; then
+        builddir=/tmp/pacaurtmp-$USER
+    fi
+
+    if [[ -z $clean || $clean != "false" ]]; then # Make sure clean option is off in pacaur
+        sudo sed -i '/clean=/d' $pacaurconfig && echo "clean=false" | sudo tee -a $pacaurconfig
+    fi
+    #if 
+        pacaur -cc
+        pacaur -Syuamw #; then
+        eval "in_block=1"
+        pre=$(snapper create --type=pre --cleanup-algorithm=number --print-number --description="AUR upgrade") #Take snapshot and store snapshot number in $pre
+        msg "New pre snapshot with number ${pre}\n"
+        sudo pacman -U --noconfirm $(find $builddir -type f -regex  ".*\.pkg\.\(tar\|tar\.[gx]z\)" ) && msg "Packages upgreaded\n" || return 1
+        msg "Taking post snapshot\n"
+        post=$(snapper create --type=post --cleanup-algorithm=number --print-number --pre-number="$pre") # Take post snapshot and store number in $post
+        msg "Snapshot block complete: $snpr_cnfg/${pre}..${post}\n"
+        eval "in_block=0"
+        return 0
+    #else
+    #    return 1
+    #fi
+}
+
 depscheck
-while [[ $(echo $1 | head -c 1) == "-" ]]; do # Interpret any arguments starting with - to be flags
-    case $1 in
-        -b|--boot-backup) boot=2
-            shift # Remove -b argument. No particular reason for this, just cleanliness. Should I choose to add more arguments, this would be needed
-            ;;
-        -h|--help) echo -e "${0##*/}: [OPTIONS]\n\nOPTIONS:\n [-h --help ]\t\t\tPrint this help message\n [-b --boot-backup ]\t\tForce backup of boot to $bootbackupdir"
-            exit 0
-            ;;
-        *) echo "Unrecognized argument: $1"
-            exit 1
-            ;;
-    esac  
+while getopts "bha" OPT; do
+   case "${OPT}" in
+       a) aur=1;;
+       h) echo -e $helpmsg; exit 0;;
+       b) boot=2;;
+       *) msg "Unrecognized argument\n"; echo -e $helpmsg; exit 1; ;;
+   esac
 done
  
 [[ !  -d "$log_path" ]] && sudo mkdir -p $log_path # If log directory does not exist, create it
@@ -109,6 +141,9 @@ if [[ -z $pkgs ]]; then
     if [[ $boot == 2 ]]; then
         bootbackup 
     fi 
+    if [[ $aur == 1 ]]; then
+        aur && { msg "Done\n"; exit 0; } || exit 1
+    fi
     msg "Nothing to update. Aborting.\n" && exit 2
 fi
 
@@ -134,3 +169,6 @@ echo -e "\nPackages upgraded: \n\n$pkgs" | sudo tee -a $log_file > /dev/null
 sudo sed -i '/Proceed with installation/d' $log_file 
 in_block=0
 bootbackup
+if [[ $aur == 1 ]]; then
+    aur && msg "Done" || exit 1
+fi
