@@ -91,28 +91,31 @@ aur(){
     if [[ -z $clean || $clean != "false" ]]; then # Make sure clean option is off in pacaur
         sudo sed -i '/clean=/d' $pacaurconfig && echo "clean=false" | sudo tee -a $pacaurconfig
     fi
-    msg "Gathering info\n"
+    msg "Checking for updates...\n"
     aurpkgs=$(pacaur --color never -k | awk -F'aur  ' '{print $2}')
     if [[ -z $aurpkgs ]]; then
         msg "No AUR packages to upgrade.\n"
         return 2
     fi
-    #if 
-        pacaur -cc
-        pacaur -Syuamw #; then
-        eval "in_block=1"
-        pre=$(snapper create --type=pre --cleanup-algorithm=number --print-number --description="AUR upgrade") #Take snapshot and store snapshot number in $pre
-        msg "New pre snapshot with number ${pre}\n"
-        sudo pacman -U --noconfirm $(find $builddir -type f -regex  ".*\.pkg\.\(tar\|tar\.[gx]z\)" ) && msg "Packages upgreaded\n" || return 1
-        msg "Taking post snapshot\n"
-        post=$(snapper create --type=post --cleanup-algorithm=number --print-number --pre-number="$pre") # Take post snapshot and store number in $post
-        msg "Snapshot block complete: $snpr_cnfg/${pre}..${post}\n"
-        echo -e "\nAUR packages upgraded: \n\n$aurpkgs" | sudo tee -a $log_file > /dev/null
-        eval "in_block=0"
-        return 0
-    #else
-    #    return 1
-    #fi
+    pacaur -cc
+    if pacaur -Syuw; then
+        if [[ -n $(find $builddir -type f -regex ".*\.pkg\.\(tar\|tar\.[gx]z\)" &> /dev/null) ]] ; then
+            eval "in_block=1"
+            pre=$(snapper create --type=pre --cleanup-algorithm=number --print-number --description="AUR upgrade") #Take snapshot and store snapshot number in $pre
+            msg "New pre snapshot with number ${pre}\n"
+            sudo pacman -U --noconfirm $(find $builddir -type f -regex  ".*\.pkg\.\(tar\|tar\.[gx]z\)" ) && msg "Packages upgreaded\n" || return 1
+            msg "Taking post snapshot\n"
+            post=$(snapper create --type=post --cleanup-algorithm=number --print-number --pre-number="$pre") # Take post snapshot and store number in $post
+            msg "Snapshot block complete: $snpr_cnfg/${pre}..${post}\n"
+            echo -e "\nAUR packages upgraded: \n\n$aurpkgs" | sudo tee -a $log_file > /dev/null
+            eval "in_block=0"
+            return 0
+        else
+            return 2
+        fi
+    else
+        return 1
+    fi
 }
 
 depscheck
@@ -149,7 +152,12 @@ if [[ -z $pkgs ]]; then
         bootbackup 
     fi 
     if [[ $aur == 1 ]]; then
-        aur && { msg "Done\n"; exit 0; }
+        if aur; then
+           msg "Done\n"
+           exit 0  
+       else
+           exit $(echo $?)
+        fi
     fi
     msg "Nothing to update. Aborting.\n" && exit 2
 fi
