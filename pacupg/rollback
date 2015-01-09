@@ -31,8 +31,9 @@ select input in 'Timeline snapshot' 'Upgrade'; do
 
     'Upgrade')
         clear
-        echo 'Undoing most recent upgrade'
-        pre=$(sudo snapper list --type pre-post | tail -n -1 | awk -F\| '{print $1}' | tr -d ' ') #Get number of most recent pre snapshot
+        snapper list --type pre-post | awk -F\| '{print $1"|" $3 "|" $5}'| sed '1,3d' #Show a list of all pre-post snapshots 
+        echo -en "\nNumber of the snapshot you like to return to: " 
+        read pre
         snapper -v undochange $pre..$((pre+1)) #Undo the changes from $pre and the one right after it
         ;;
 
