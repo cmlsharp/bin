@@ -78,7 +78,7 @@ bootbackup(){
 aur(){
     msg "This feature is still experimental"
     msg "Beginning AUR upgrade\n"
-    if ! which pacaur; then
+    if ! which pacaur > /dev/null; then
         msg "pacaur not found. Aborting"
         exit 1
     fi
@@ -91,6 +91,12 @@ aur(){
     if [[ -z $clean || $clean != "false" ]]; then # Make sure clean option is off in pacaur
         sudo sed -i '/clean=/d' $pacaurconfig && echo "clean=false" | sudo tee -a $pacaurconfig
     fi
+    msg "Gathering info\n"
+    aurpkgs=$(pacaur --color never -k | awk -F'aur  ' '{print $2}')
+    if [[ -z $aurpkgs ]]; then
+        msg "No AUR packages to upgrade.\n"
+        return 2
+    fi
     #if 
         pacaur -cc
         pacaur -Syuamw #; then
@@ -101,6 +107,7 @@ aur(){
         msg "Taking post snapshot\n"
         post=$(snapper create --type=post --cleanup-algorithm=number --print-number --pre-number="$pre") # Take post snapshot and store number in $post
         msg "Snapshot block complete: $snpr_cnfg/${pre}..${post}\n"
+        echo -e "\nAUR packages upgraded: \n\n$aurpkgs" | sudo tee -a $log_file > /dev/null
         eval "in_block=0"
         return 0
     #else
@@ -136,7 +143,7 @@ trap quit EXIT ERR 15 1 2
 msg "Retrieving packages...\n"
 sudo pacman -Syuw && msg "Done\n"  || exit 2 # Only pull down needed packages. Don't install
 
-pkgs=$(package-query -SQuf "%n-%l -> %V\n")
+pkgs=$(package-query -SQuf "%n  %l  ->  %V\n")
 if [[ -z $pkgs ]]; then
     if [[ $boot == 2 ]]; then
         bootbackup 
