@@ -76,7 +76,7 @@ bootbackup(){
     fi
 }
 aur(){
-    msg "This feature is still experimental"
+    msg "This feature is still experimental\n"
     msg "Beginning AUR upgrade\n"
     if ! which pacaur > /dev/null; then
         msg "pacaur not found. Aborting"
