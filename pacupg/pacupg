@@ -22,7 +22,7 @@ log_path="/var/local/log/pacupg/"
 date=$(date "+%Y-%m-%d-%H%M%S")
 log_file="${log_path}/pacupg_${date}.log"
 depsdir=/tmp/pacupg-deps
-helpmsg="${0##*/}: [OPTIONS]\n\nOPTIONS:\n -h\t\tPrint this help message\n -b\t\tForce backup of boot to ${bootbackupdir}\n -a\t\tUpgrade AUR packages as well (experimental) (requires pacaur)"
+helpmsg="${0##*/}: [OPTIONS]\n\nOPTIONS:\n -h\t\tPrint this help message\n -b\t\tForce backup of boot to ${bootbackupdir}\n -a\t\tUpgrade AUR packages as well (experimental) (requires pacaur)\n -r\t\tRollback previous upgrades"
 
 pacaurconfig=/etc/xdg/pacaur/config
 
@@ -41,8 +41,8 @@ depscheck(){
         if [[ ! -f $(type -p $i) ]]; then 
             msg "$i not found. This script requires $i to function.\n"
             msg "Would you like to install it? [Y/n] "
-            read input
-            case $input in
+            read installdeps
+            case $installdeps in
                 ""|[Yy][Ee][Ss]|[Yy]) 
                     if [[ $i == "package-query" ]]; then
                         mkdir -p $depsdir
@@ -118,13 +118,46 @@ aur(){
     #    return 1
     #fi
 }
+rollback(){
+    PS3="Choice: "
+    clear
+    menu(){
+    echo "What do you want to rollback?"
+    select rollback_type in 'Timeline snapshot' 'Upgrade' 'Quit'; do
+        case $rollback_type in 
+    
+        'Upgrade')
+            clear
+            snapper list --type pre-post | awk -F\| '{print $1"|" $3 "|" $5}'| sed '1,3d' #Show a list of all pre-post snapshots 
+            echo -en "\nNumber of the snapshot you like to return to: " 
+            read past
+            sudo snapper -v undochange $past..$((past+1)) #Undo the changes from $pre and the one right after it
+            ;;
+    
+        'Timeline snapshot')
+            clear
+            snapper list --type single | awk -F\| '{print $1"|" $2}'| sed '1,3d' #Show a list of all single snapshots 
+            echo -en "\nNumber of the snapshot you like to return to: " 
+            read past
+            sudo snapper -v undochange $past..0 #Undo change from sekected snapshot to now
+            ;; 
+        'Quit') exit 0
+        esac
+        read -p "All done, press [ENTER] to go back to the menu or Ctrl-C to exit"
+        clear
+        menu
+    done
+    }
+menu
+}
 
 depscheck
-while getopts "bha" OPT; do
+while getopts "bhar" OPT; do
    case "${OPT}" in
        a) aur=1;;
        h) echo -e $helpmsg; exit 0;;
        b) boot=2;;
+       r) rollback;;
        *) msg "Unrecognized argument\n"; echo -e $helpmsg; exit 1; ;;
    esac
 done
@@ -135,8 +168,8 @@ quit() { # Run cleanup code upon exit or error
     rm -rf $depsdir
     if [[ "$in_block" = "1" ]]; then
         msg "WARNING: Aborting from pre/post snapshot block Do you want to remove pre snapshot ${pre}? [Y/n]: "
-        read input
-        case $input in 
+        read remshot
+        case $remshot in 
             ""|[Yy]|[Yy][Ee][Ss])sudo snapper delete $pre; msg "Snapshot removed\n"; in_block=0; exit;; 
             [Nn]|[Nn][Oo]) msg "Okay. Leaving empty pre snapshot\n"; in_block=0 ;;
         esac 
