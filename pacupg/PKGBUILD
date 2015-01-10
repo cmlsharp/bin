@@ -20,6 +20,5 @@ pkgver() {
 package() {
   cd "$srcdir/bin"
   install -Dm0755 pacupg/pacupg      "$pkgdir/usr/bin/pacupg"
-  install -Dm0755 pacupg/rollback    "$pkgdir/usr/bin/rollback"
   install -Dm0644 pacupg/pacupg.1    "$pkgdir/usr/share/man/man1/pacupg.1"
 }
