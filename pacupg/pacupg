@@ -21,7 +21,6 @@ bootbackupdir="/var/local/boot-backup/"
 log_path="/var/local/log/pacupg/"
 date=$(date "+%Y-%m-%d-%H%M%S")
 log_file="${log_path}/pacupg_${date}.log"
-depsdir=/tmp/pacupg-deps
 helpmsg="${0##*/}: [OPTIONS]\n\nOPTIONS:\n -h\t\tPrint this help message\n -b\t\tForce backup of boot to ${bootbackupdir}\n -a\t\tUpgrade AUR packages as well (experimental) (requires pacaur)\n -r\t\tRollback previous upgrades"
 
 pacaurconfig=/etc/xdg/pacaur/config
@@ -30,38 +29,12 @@ msg(){
     echo -en "\e[0;32m$(tput bold)> ${@}$(tput sgr0)\e[0m"
 }
 
-depscheck(){
+fscheck(){
     # Make sure root is btrfs
     if [[ $(mount | grep ' / ' | awk -F'type ' '{print $2}' | cut -d' ' -f1) != "btrfs" ]] > /dev/null; then
         msg "Root not btrfs. Aborting\n"
         exit 1
     fi
-    # Install needed deps
-    for i in package-query snapper rsync; do
-        if [[ ! -f $(type -p $i) ]]; then 
-            msg "$i not found. This script requires $i to function.\n"
-            msg "Would you like to install it? [Y/n] "
-            read installdeps
-            case $installdeps in
-                ""|[Yy][Ee][Ss]|[Yy]) 
-                    if [[ $i == "package-query" ]]; then
-                        mkdir -p $depsdir
-                        cd $depsdir
-                        curl -O https://aur.archlinux.org/packages/pa/package-query/package-query.tar.gz
-                        tar zxvf package-query.tar.gz
-                        cd package-query
-                        makepkg -si && msg "Done\n" || exit 1
-                        cd
-                    else
-                        sudo pacman -S $i && msg "Done\n" || exit 1
-                    fi
-                    ;;
-                [Nn][Oo]|[Nn]|*) msg "Aborting\n" && exit 1
-                    ;;
-            esac
-            depscheck
-        fi
-    done
 }
 bootbackup(){
     if mount | grep -q /boot && [[ $boot == 1 ]] || [[ $boot == 2 ]] ; then
@@ -151,7 +124,7 @@ rollback(){
 menu
 }
 
-depscheck
+fscheck
 while getopts "bhar" OPT; do
    case "${OPT}" in
        a) aur=1;;
@@ -165,7 +138,6 @@ done
 [[ !  -d "$log_path" ]] && sudo mkdir -p $log_path # If log directory does not exist, create it
 
 quit() { # Run cleanup code upon exit or error
-    rm -rf $depsdir
     if [[ "$in_block" = "1" ]]; then
         msg "WARNING: Aborting from pre/post snapshot block Do you want to remove pre snapshot ${pre}? [Y/n]: "
         read remshot
