@@ -59,7 +59,7 @@ aur(){
         rm  -rf ./package-query.tar.gz ./yaourt.tar.gz ./package-query ./yaourt
         
     fi
-    yaourt -S --needed $(cat $dir/aur_pkgs)
+    pacaur -S --needed $(cat $dir/aur_pkgs)
     goback
 }
 configs(){
