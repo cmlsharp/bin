@@ -55,11 +55,10 @@ aur(){
         msg "pacaur not found. Aborting"
         exit 1
     fi
+    source /etc/makepkg.conf
     source $pacaurconfig
 
-    if [[ -z $builddir ]]; then
-        builddir=/tmp/pacaurtmp-$USER
-    fi
+    builddir=/tmp/makepkg/pacaur-$date
 
     if [[ -z $clean || $clean != "false" ]]; then # Make sure clean option is off in pacaur
         sudo sed -i '/clean=/d' $pacaurconfig && echo "clean=false" | sudo tee -a $pacaurconfig
@@ -102,7 +101,7 @@ rollback(){
         'Upgrade')
             clear
             snapper list --type pre-post | awk -F\| '{print $1"|" $3 "|" $5}'| sed '1,3d' #Show a list of all pre-post snapshots 
-            echo -en "\nNumber of the snapshot you like to return to: " 
+            echo -en "\nNumber of the upgrade you'd like to undo: " 
             read past
             sudo snapper -v undochange $past..$((past+1)) #Undo the changes from $pre and the one right after it
             ;;
