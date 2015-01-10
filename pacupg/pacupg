@@ -55,13 +55,14 @@ aur(){
         msg "pacaur not found. Aborting"
         exit 1
     fi
-    source /etc/makepkg.conf
     source $pacaurconfig
 
-    builddir=/tmp/makepkg/pacaur-$date
+    if [[ -z $builddir ]]; then
+        builddir=/tmp/pacaurtmp-$USER
+    fi
 
     if [[ -z $clean || $clean != "false" ]]; then # Make sure clean option is off in pacaur
-        sudo sed -i '/clean=/d' $pacaurconfig && echo "clean=false" | sudo tee -a $pacaurconfig
+        sudo sed -i '/clean=/d' $pacaurconfig && echo "clean=false" | sudo tee -a $pacaurconfig > /dev/null
     fi
     msg "Checking for updates...\n"
     aurpkgs=$(pacaur --color never -k | awk -F'aur  ' '{print $2}')
