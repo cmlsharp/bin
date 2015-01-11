@@ -160,7 +160,6 @@ if [[ -z $pkgs ]]; then
     fi 
     if [[ $aur == 1 ]]; then
         if aur; then
-           msg "Log of upgraded packages available at $log_file"
            exit 0  
        else
            exit $(echo $?)
@@ -194,6 +193,6 @@ bootbackup
 if [[ $aur == 1 ]]; then 
     aur
 else
-    msg "Log of upgraded packages available at ${log_file}\n\n"
+    msg "Log of upgraded packages available at ${log_file}\n"
 fi
 sudo sed -i '/^$/d' $log_file
