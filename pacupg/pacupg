@@ -84,6 +84,7 @@ aur(){
             echo -e "\nAUR packages upgraded: \n\n$aurpkgs" | sudo tee -a $log_file > /dev/null
             eval "in_block=0"
             return 0
+            msg "Log of upgraded packages available at ${log_file}\n"
         else
             return 2
         fi
@@ -159,7 +160,7 @@ if [[ -z $pkgs ]]; then
     fi 
     if [[ $aur == 1 ]]; then
         if aur; then
-           msg "Done\n"
+           msg "Log of upgraded packages available at $log_file"
            exit 0  
        else
            exit $(echo $?)
@@ -190,6 +191,9 @@ echo -e "\nPackages upgraded: \n\n$pkgs" | sudo tee -a $log_file > /dev/null
 sudo sed -i '/Proceed with installation/d' $log_file 
 in_block=0
 bootbackup
-if [[ $aur == 1 ]]; then
-    aur && msg "Done\n" 
+if [[ $aur == 1 ]]; then 
+    aur
+else
+    msg "Log of upgraded packages available at ${log_file}\n"
 fi
+sudo sed -i '/^$/d' $log_file
