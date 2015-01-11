@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+#
+# Written by: Chad Sharp
+#
+# Purpose: Ease the process of uploading packages to the AUR
+#
+#########################
+helpmsg="${0##*/} [OPTIONS] FILES\n\n-h\t\tPrint this help message\n-u\t\tUpload the package to AUR"
+tmpdir=/tmp/scratch
+while getopts "hu" OPT; do
+    case $OPT in
+        h) echo -e $helpmsg; exit 0 ;;
+        u) upload=1; shift;;
+        *) echo "Unrecognized argument"; exit 1 ;;
+    esac
+done
+if (( $# == 0 )); then
+    echo "This script requires arguments"
+    exit 1
+fi
+
+if [[ -d $tmpdir ]]; then 
+    rm -rf $tmpdir
+fi
+
+mkdir $tmpdir
+cp $@ $tmpdir
+cd $tmpdir
+makepkg || { echo "Build failed. Aborting"; exit 1; }
+mkdir -p $tmpdir/aurpkg
+
+for i in ${@##*/}; do 
+   mv $i $tmpdir/aurpkg/$i 
+done
+
+cd $tmpdir/aurpkg
+mkaurball
+
+if [[ $upload == 1 ]]; then
+    if which aurploader > /dev/null; then
+        aurploader -k -a -l ~/.config/aurploader
+    else
+        xdg-open https://aur.archlinux.org/submit/
+    fi
+else 
+    echo "Package located in $tmpdir/aurpkg"
+fi
