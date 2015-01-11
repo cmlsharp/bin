@@ -18,7 +18,7 @@
 ###############################################################
 snpr_cnfg=root
 bootbackupdir="/var/local/boot-backup/"
-log_path="/var/local/log/pacupg/"
+log_path="/var/local/log/pacupg"
 date=$(date "+%Y-%m-%d-%H%M%S")
 log_file="${log_path}/pacupg_${date}.log"
 helpmsg="${0##*/}: [OPTIONS]\n\nOPTIONS:\n -h\t\tPrint this help message\n -b\t\tForce backup of boot to ${bootbackupdir}\n -a\t\tUpgrade AUR packages as well (experimental) (requires pacaur)\n -r\t\tRollback previous upgrades"
@@ -84,7 +84,7 @@ aur(){
             echo -e "\nAUR packages upgraded: \n\n$aurpkgs" | sudo tee -a $log_file > /dev/null
             eval "in_block=0"
             return 0
-            msg "Log of upgraded packages available at ${log_file}\n"
+            msg "Log of upgraded packages available at ${log_file}\n\n"
         else
             return 2
         fi
@@ -194,6 +194,6 @@ bootbackup
 if [[ $aur == 1 ]]; then 
     aur
 else
-    msg "Log of upgraded packages available at ${log_file}\n"
+    msg "Log of upgraded packages available at ${log_file}\n\n"
 fi
 sudo sed -i '/^$/d' $log_file
