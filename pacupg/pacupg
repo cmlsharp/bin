@@ -21,9 +21,10 @@ bootbackupdir="/var/local/boot-backup/"
 log_path="/var/local/log/pacupg"
 date=$(date "+%Y-%m-%d-%H%M%S")
 log_file="${log_path}/pacupg_${date}.log"
+boot=0
+aur=0
 helpmsg="${0##*/}: [OPTIONS]\n\nOPTIONS:\n -h\t\tPrint this help message\n -b\t\tForce backup of boot to ${bootbackupdir}\n -a\t\tUpgrade AUR packages as well (experimental) (requires pacaur)\n -r\t\tRollback previous upgrades"
-
-pacaurconfig=/etc/xdg/pacaur/config
+pacaurconfig="/etc/xdg/pacaur/config"
 
 msg(){
     echo -en "\e[0;32m$(tput bold)> ${@}$(tput sgr0)\e[0m"
@@ -37,16 +38,18 @@ fscheck(){
     fi
 }
 bootbackup(){
-    if mount | grep -q /boot && [[ $boot == 1 ]] || [[ $boot == 2 ]] ; then
-        [[ ! -d $bootbackupdir ]] && sudo mkdir -p $bootbackupdir # Make backup directory if it does not exist
+    if mount | grep -q /boot && [[ $boot != 0 ]] ; then
+        [[ -d $bootbackupdir ]] || sudo mkdir -p $bootbackupdir # Make backup directory if it does not exist
         msg "Backing up /boot\n" 
-        if sudo rsync -av --delete /boot/ $bootbackupdir > /dev/null 2> >(sudo tee -a $log_file); then # Copy contents of /boot to directory set in $bootbackupdir and delete any extraneous files in the latter directory
+        if sudo rsync -av --delete /boot/ $bootbackupdir > /dev/null; then # Copy contents of /boot to directory set in $bootbackupdir and delete any extraneous files in the latter directory
             msg "Done\n"
+            return 0
         else 
-            echo "Errors from bootbackup: " >> $log_file
-            msg "Boot backup failed. Aborting\n" | tee -a $log_file 1>&2
+            msg "Boot backup failed. Aborting\n" | sudo tee -a $log_file 1>&2
+            exit 3
         fi
     fi
+    
 }
 aur(){
     msg "This feature is still experimental\n"
@@ -155,16 +158,8 @@ sudo pacman -Syuw && msg "Done\n"  || exit 2 # Only pull down needed packages. D
 
 pkgs=$(package-query -SQuf "%n  %l  ->  %V\n")
 if [[ -z $pkgs ]]; then
-    if [[ $boot == 2 ]]; then
-        bootbackup 
-    fi 
-    if [[ $aur == 1 ]]; then
-        if aur; then
-           exit 0  
-       else
-           exit $(echo $?)
-        fi
-    fi
+    [[ $boot == 2 ]] && bootbackup 
+    [[ $aur == 1 ]] && { aur; exit $?; }
     msg "Nothing to update. Aborting.\n" && exit 2
 fi
 
@@ -176,7 +171,7 @@ fi
 echo -e "Errors (if any) during upgrade:\n" | sudo tee -a $log_file > /dev/null
 exec 2> >(sudo tee -a "$log_file" >&2)
 
-bootbackup
+bootbackup 
 
 in_block=1
 pre=$(snapper create --type=pre --cleanup-algorithm=number --print-number --description="pacman -Syu") #Take snapshot and store snapshot number in $pre
@@ -189,7 +184,7 @@ msg "Snapshot block complete: $snpr_cnfg/${pre}..${post}\n"
 echo -e "\nPackages upgraded: \n\n$pkgs" | sudo tee -a $log_file > /dev/null
 sudo sed -i '/Proceed with installation/d' $log_file 
 in_block=0
-bootbackup
+bootbackup 
 if [[ $aur == 1 ]]; then 
     aur
 else
