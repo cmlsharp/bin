@@ -76,11 +76,12 @@ aur(){
     pacaur -cc
     #if 
     pacaur -Syuw #; then
-    if [[ -n $(find $builddir -type f -regex ".*\.pkg\.\(tar\|tar\.[gx]z\)") ]]; then
+    buildpkgs=$(find $builddir -type f -regex ".*\.pkg\.\(tar\|tar\.[gx]z\)")
+    if [[ -n $buildpkgs ]]; then
             eval "in_block=1"
             pre=$(snapper create --type=pre --cleanup-algorithm=number --print-number --description="AUR upgrade") #Take snapshot and store snapshot number in $pre
             msg "New pre snapshot with number ${pre}\n"
-            sudo pacman -U --noconfirm $(find $builddir -type f -regex  ".*\.pkg\.\(tar\|tar\.[gx]z\)" ) && msg "Packages upgraded\n" || return 1
+            sudo pacman -U --noconfirm $buildpkgs && msg "Packages upgraded\n" || return 1
             msg "Taking post snapshot\n"
             post=$(snapper create --type=post --cleanup-algorithm=number --print-number --pre-number="$pre") # Take post snapshot and store number in $post
             msg "Snapshot block complete: $snpr_cnfg/${pre}..${post}\n"
