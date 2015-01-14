@@ -181,7 +181,7 @@ exec 2> >(sudo tee -a "$log_file" >&2)
 bootbackup 
 
 in_block=1
-pre=$(snapper create --type=pre --cleanup-algorithm=number --print-number --description="pacman -Syu") #Take snapshot and store snapshot number in $pre
+pre=$(snapper create --type=pre --cleanup-algorithm=number --print-number --description="Package upgrade") #Take snapshot and store snapshot number in $pre
 msg "New pre snapshot with number ${pre}\n"
 sudo pacman -Su --noconfirm # Upgrade packages
 echo
