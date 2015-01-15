@@ -163,14 +163,14 @@ trap quit EXIT ERR 15 1 2
 msg "Retrieving packages...\n"
 sudo pacman -Syuw && msg "Done\n"  || exit 2 # Only pull down needed packages. Don't install
 
-pkgs=$(package-query -SQuf "%n  %l  ->  %V\n")
+pkgs=$(package-query -SQuf "%n  %l  ->  %V")
 if [[ -z $pkgs ]]; then
     [[ $boot == 2 ]] && bootbackup 
     [[ $aur == 1 ]] && { aur; exit $?; }
     msg "Nothing to update. Aborting.\n" && exit 2
 fi
 
-if grep "linux-[0-9]" <(echo $pkgs);  then
+if echo $pkgs | awk '{print $1}' | tr -d ' ' | grep -q "^linux$";  then
     msg "Upgrade to the Linux kernel detected. Enabling backup of /boot\n"
     boot=1
 fi
@@ -197,4 +197,3 @@ if [[ $aur == 1 ]]; then
 else
     msg "Log of upgraded packages available at ${log_file}\n"
 fi
-sudo sed -i '/^$/d' $log_file
