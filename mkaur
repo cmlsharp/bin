@@ -5,17 +5,21 @@
 # Purpose: Ease the process of uploading packages to the AUR
 #
 #########################
-helpmsg="${0##*/} [OPTIONS] FILES\n\n-h\t\tPrint this help message\n-u\t\tUpload the package to AUR"
+helpmsg="${0##*/} [OPTIONS] FILES\n\n-h\t\tPrint this help message\n-u\t\tUpload the package to AUR\n-n\t\tDon't try building package before upload"
 tmpdir=/tmp/scratch
-while getopts "hu" OPT; do
+nobuild=0
+while getopts "hnu" OPT; do
     case $OPT in
         h) echo -e $helpmsg; exit 0 ;;
-        u) upload=1; shift;;
+        u) upload=1;;
+        n) nobuild=1;;
         *) echo "Unrecognized argument"; exit 1 ;;
     esac
 done
+[[ $upload == 1 ]] && shift
+[[ $nobuild == 1 ]] && shift
 if (( $# == 0 )); then
-    echo "This script requires arguments"
+    echo "This script requires arguments (the files you want to package)"
     exit 1
 fi
 
@@ -26,14 +30,15 @@ fi
 mkdir $tmpdir
 cp $@ $tmpdir
 cd $tmpdir
-makepkg || { echo "Build failed. Aborting"; exit 1; }
+if [[ $nobuild == 0 ]] ; then
+    makepkg || { echo "Build failed. Aborting"; exit 1; }
+fi
 mkdir -p $tmpdir/aurpkg
 
 for i in ${@##*/}; do 
-   mv $i $tmpdir/aurpkg/$i 
+    mv ${tmpdir}/${i} ${tmpdir}/aurpkg/${i}
 done
-
-cd $tmpdir/aurpkg
+cd ${tmpdir}/aurpkg
 mkaurball
 
 if [[ $upload == 1 ]]; then
