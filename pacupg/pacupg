@@ -60,13 +60,10 @@ aur(){
     fi
     source $pacaurconfig
 
-    if [[ -z $builddir ]]; then
-        builddir=/tmp/pacaurtmp-$USER
-    fi
+    [[ -z $builddir ]] && builddir=/tmp/pacaurtmp-$USER
 
-    if [[ -z $clean || $clean != "false" ]]; then # Make sure clean option is off in pacaur
-        sudo sed -i '/clean=/d' $pacaurconfig && echo "clean=false" | sudo tee -a $pacaurconfig > /dev/null
-    fi
+    [[ -z $clean || $clean != "false" ]] &&  sudo sed -i '/clean=/d' $pacaurconfig && echo "clean=false" | sudo tee -a $pacaurconfig > /dev/null # Make sure clean option is off in pacaur
+
     msg "Checking for updates...\n"
     aurpkgs=$(pacaur --color never -k | awk -F'aur  ' '{print $2}')
     if [[ -z $aurpkgs ]]; then
@@ -98,6 +95,7 @@ aur(){
 }
 rollback(){
     PS3="Choice: "
+    kernelupg=0
     clear
     menu(){
     echo "What do you want to rollback?"
@@ -106,11 +104,18 @@ rollback(){
     
         'Upgrade')
             clear
-            snapper list --type pre-post | awk -F\| '{print $1"|" $3 "|" $5}'| sed '1,3d' #Show a list of all pre-post snapshots 
+            snapper list --type pre-post | awk -F\| '{print $1"|" $3 "|" $5}'| grep 'AUR upgrade\|Package upgrade' #Show a list of all pre-post snapshots 
             echo -en "\nNumber of the upgrade you'd like to undo: " 
             read past
             post=$((past+1))
             sudo snapper -v undochange $past..$post #Undo the changes from $pre and the one right after it
+            #if snapper list --type pre-post  | grep -q $past | grep -q "$snapComment"; then
+                #echo -n "This snapshot had a kernel upgrade. Do you want to roll that back as well? [Y/n] "
+                #read kernback
+                #case kernback in 
+                    #""|[Yy]|[Yy][Ee][Ss]) sudo rsync -av --delete $bootbackupdir /boot/
+                #esac
+            #fi
             ;;
     
         'Timeline snapshot')
@@ -163,25 +168,25 @@ trap quit EXIT ERR 15 1 2
 msg "Retrieving packages...\n"
 sudo pacman -Syuw && msg "Done\n"  || exit 2 # Only pull down needed packages. Don't install
 
-pkgs=$(package-query -SQuf "%n  %l  ->  %V")
+pkgs=$(package-query -SQuf "%n  %l  ->  %V\n")
 if [[ -z $pkgs ]]; then
     [[ $boot == 2 ]] && bootbackup 
     [[ $aur == 1 ]] && { aur; exit $?; }
     msg "Nothing to update. Aborting.\n" && exit 2
 fi
 
-if echo $pkgs | awk '{print $1}' | tr -d ' ' | grep -q "^linux$";  then
+if pacman -Qqu | grep -q "^linux$";  then
     msg "Upgrade to the Linux kernel detected. Enabling backup of /boot\n"
     boot=1
+    snapComment="+ kernel upgrade"
 fi
-
 echo -e "Errors (if any) during upgrade:\n" | sudo tee -a $log_file > /dev/null
 exec 2> >(sudo tee -a "$log_file" >&2)
 
 bootbackup 
 
 in_block=1
-pre=$(snapper create --type=pre --cleanup-algorithm=number --print-number --description="Package upgrade") #Take snapshot and store snapshot number in $pre
+pre=$(snapper create --type=pre --cleanup-algorithm=number --print-number --description="Package upgrade${snapComment}") #Take snapshot and store snapshot number in $pre
 msg "New pre snapshot with number ${pre}\n"
 sudo pacman -Su --noconfirm # Upgrade packages
 echo
