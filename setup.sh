@@ -42,21 +42,21 @@ pkg(){
 }
 
 aur(){
-    if [[ ! -f /usr/bin/yaourt ]]; then
-        bold "Installing yaourt"
+    if [[ ! -f /usr/bin/pacaur ]]; then
+        bold "Installing pacaur"
      
         cd
-        curl -O https://aur.archlinux.org/packages/pa/package-query/package-query.tar.gz
-        tar zxvf package-query.tar.gz
-        cd package-query
+        curl -O https://aur.archlinux.org/packages/co/cower/cower.tar.gz
+        tar zxvf cower.tar.gz
+        cd cower 
         makepkg -si
         cd ..
-        curl -O https://aur.archlinux.org/packages/ya/yaourt/yaourt.tar.gz
-        tar zxvf yaourt.tar.gz
-        cd yaourt
+        curl -O https://aur.archlinux.org/packages/pa/pacaur/pacaur.tar.gz
+        tar zxvf pacaur.tar.gz
+        cd pacaur
         makepkg -si
         cd ..
-        rm  -rf ./package-query.tar.gz ./yaourt.tar.gz ./package-query ./yaourt
+        rm  -rf ./cower.tar.gz ./pacaur.tar.gz ./cower ./pacaur
         
     fi
     pacaur -S --needed $(cat $dir/aur_pkgs)
