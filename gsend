@@ -8,7 +8,7 @@ remove=0
 branch=master
 location=origin
 errmsg(){
-    echo "$1" #Print message supplied to function
+    echo "$@" >/dev/stderr  #Print message supplied to function
     exit 1 
 }
 
@@ -21,7 +21,7 @@ while [[ $(echo $1 | head -c 1) == "-" ]]; do
             shift #Get rid of $1 and move $2 to $1
             ;;
         -d|--dir) cd ~/$2 > /dev/null 2>&1 || errmsg "No such directory" #If dir does not exist, run errmsg function
-            test -d ./.git || errmsg "No git repository exists in this directory" #If there is no .git folder, run errmsg function
+            [[ -d ./.git || -d ../.git ]] || errmsg "No git repository exists in this directory or its parent directory" #If there is no .git folder, run errmsg function
             shift 2 #Get rid of both the -d option and the folder` name and move $3 to $1
             ;;
         -b|--branch) branch=$2
