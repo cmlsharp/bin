@@ -42,7 +42,7 @@ case $DISTRIB_ID in
     *) echo "$distromsg" && exit 1 ;;
 esac
     
-location=$(type -a $1 | grep "$i is /" | awk '{print $3}') #Find location of binary
+location=$(type -p $1)  #Find location of binary
 if [[ $location ]]; then
     eval "$pkgcmd $location" #Evaluate the #pkgcmd on the file stored in $location
 else
