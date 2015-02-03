@@ -17,17 +17,19 @@ checkroot(){
         echo -n "You do not have write permissions to \"$1\". Use sudo? [Y/n] "
         read root
         case $root in
-            ""|[Yy]|[Yy][Ee][Ss]) eval "v='sudo '" #Set global variable $v to sudo
+            ""|[Yy]|[Yy][Ee][Ss]) eval "v='sudo '";; #Set global variable $v to sudo
+            [Nn]|[Nn][Oo]|*)echo "${bold}Attempting to delete without sudo"${normal}; eval "flag=' -f'";;
         esac
     fi
 }
 
 while [[ $# > 0 ]]; do #While number of files to delete is > 0 do the following
-    remmsg="${bold}$1${normal} removed"
+    remmsg="${bold}${1}${normal} removed"
     v="" #Reset sudo choice
+    flag=""
     if [[ -f $1 || -h $1 ]]; then #If the argument is a file or a link, delete it without prompt
         checkroot $1 #Check if root is required to delete it
-        ${v}rm $1 && echo "File $remmsg" #If $v is unset (root not required), rm will run as normal
+        ${v}rm${flag} "$1" && echo "File $remmsg" #If $v is unset (root not required), rm will run as normal
         shift 
     elif [[ -d $1 ]]; then #Check if argument is a directory
         checkroot $1
