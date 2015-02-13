@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+#
+# Written by: crossroads1112
+# Purpose: This is a bash wrapper to the reflector python script/library. It prompts the user for his/her country code and substitutes that into the reflector command.
+# It also has the option to change the default country. 
+#
+#
+#########################################
+country='US'
+conffile=~/.config/refrc
+[[ ! -f $conffile ]] && echo "country='${country}'" > $conffile
+echo -n "Your usual country? [Y/n] "
+read answer
+case $answer in
+    ""|[Yy]|[Yy][Ee][Ss]) source $conffile 2>/dev/null
+        sudo reflector --verbose --country=$country -l 20 -p http --sort rate --save /etc/pacman.d/mirrorlist
+        ;;
+    [Nn]|[Nn][Oo]) reflector --list-countries | sed 's/[0-9]//g' #Leave only country code and country name
+        echo -e  "\nWhat is the two digit country code of your current country?"
+        printf "    Country code: "
+        read country
+        country="${country^^}" #Make all input upper case
+        sudo reflector --verbose --country=$country -l 20 -p http --sort rate --save /etc/pacman.d/mirrorlist
+        echo -n "Would you like to make this your default country? [y/N] "
+        read answer
+        case $answer in
+            [Yy]|[Yy][Ee][Ss]) echo "country='${country}'" > $conffile 
+               ;;
+        esac
+        ;;
+esac
