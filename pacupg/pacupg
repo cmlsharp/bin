@@ -84,8 +84,8 @@ aur(){
             msg "Snapshot block complete: $snpr_cnfg/${pre}..${post}\n"
             echo -e "\nAUR packages upgraded: \n\n$aurpkgs" | sudo tee -a $log_file > /dev/null
             eval "in_block=0"
-            return 0
             msg "Log of upgraded packages available at ${log_file}\n\n"
+            return 0
         else
             return 2
         fi
