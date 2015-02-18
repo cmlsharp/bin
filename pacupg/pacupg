@@ -23,7 +23,7 @@ date=$(date "+%Y-%m-%d-%H%M%S")
 log_file="${log_path}/pacupg_${date}.log"
 boot=0
 aur=0
-helpmsg="${0##*/}: [OPTIONS]\n\nOPTIONS:\n -h\t\tPrint this help message\n -b\t\tForce backup of boot to ${bootbackupdir}\n -a\t\tUpgrade AUR packages as well (experimental) (requires pacaur)\n -r\t\tRollback previous upgrades"
+helpmsg="${0##*/}: [OPTIONS]\n\nOPTIONS:\n -h\t\tPrint this help message\n -b\t\tForce backup of boot to ${bootbackupdir}\n -a\t\tUpgrade AUR packages as well (requires pacaur)\n -r\t\tRollback previous upgrades"
 pacaurconfig="/etc/xdg/pacaur/config"
 
 msg(){
@@ -190,7 +190,7 @@ fi
 if pacman -Qqu | grep -q "^linux$";  then
     msg "Upgrade to the Linux kernel detected. Enabling backup of /boot\n"
     boot=1
-    snapComment="+ kernel upgrade"
+    snapComment=" + kernel upgrade"
 fi
 echo -e "Errors (if any) during upgrade:\n" | sudo tee -a $log_file > /dev/null
 exec 2> >(sudo tee -a "$log_file" >&2)
