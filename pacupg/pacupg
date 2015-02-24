@@ -23,7 +23,7 @@ date=$(date "+%Y-%m-%d-%H%M%S")
 log_file="${log_path}/pacupg_${date}.log"
 boot=0
 aur=0
-helpmsg="${0##*/}: [OPTIONS]\n\nOPTIONS:\n -h\t\tPrint this help message\n -b\t\tForce backup of boot to ${bootbackupdir}\n -a\t\tUpgrade AUR packages as well (requires pacaur)\n -r\t\tRollback previous upgrades"
+helpmsg="${0##*/}: [OPTIONS]\n\nOPTIONS:\n -h\t\tPrint this help message\n -b\t\tForce backup of boot to ${bootbackupdir}\n -a\t\tUpgrade AUR packages as well (requires pacaur)\n -r\t\tRollback previous upgrades\n -d\t\tSame as -a but upgrades AUR development packages."
 pacaurconfig="/etc/xdg/pacaur/config"
 
 msg(){
@@ -72,7 +72,7 @@ aur(){
     fi
     pacaur -cc
     #if 
-    pacaur --color always -Syuw #; then
+    pacaur --color always -Syuw $devel #; then
     buildpkgs=$(find $builddir -type f -regex ".*\.pkg\.\(tar\|tar\.[gx]z\)")
     if [[ -n $buildpkgs ]]; then
             eval "in_block=1"
@@ -153,12 +153,13 @@ menu
 }
 
 fscheck
-while getopts "bhar" OPT; do
+while getopts "bhard" OPT; do
    case "${OPT}" in
        a) aur=1;;
        h) echo -e $helpmsg; exit 0;;
        b) boot=2;;
        r) rollback;;
+       d) aur=1; devel="--devel" ;;
        *) msg "Unrecognized argument\n"; echo -e $helpmsg; exit 1; ;;
    esac
 done
