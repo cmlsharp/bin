@@ -4,13 +4,16 @@
 #
 # Purpose: Take btrfs snapshots before and after a pacman -Syu
 #
-# Requirements: Btrfs (obviously), snapper, sudo, rsync, GNU coreutils (sed, grep etc.), package-query (optional) and that your user is added into the ALLOW_USERS variable of your snapper config (/etc/snapper/configs/yourconfigname). This script assumes your snapper config is called 'root'. If needed, change this in the snpr_cnfg variable below
+# Requirements: Btrfs (obviously), snapper, sudo, rsync, GNU coreutils (sed, grep etc.), package-query (optional) and 
+# that your user is added into the ALLOW_USERS variable of your snapper config (/etc/snapper/configs/yourconfigname). 
+# This script assumes your snapper config is called 'root'. If needed, change this in the snpr_cnfg variable below
 #
 #
 # What this script does:
 #
 # Wraps package upgrade in btrfs snapshots
-# If /boot is on a separate partition, and the kernel is being upgraded, it backs up /boot (command line flag also available)
+# If /boot is on a separate partition, and the kernel is being upgraded, it backs up /boot (command line flag also 
+# available)
 # Log of all errors and a list of upgraded packages (with version numbers pre and post upgrade)
 # If upgrade is interupted, offers to delete pre snapshot
 # Optionally upgrades AUR packages
@@ -23,7 +26,14 @@ date=$(date "+%Y-%m-%d-%H%M%S")
 log_file="${log_path}/pacupg_${date}.log"
 boot=0
 aur=0
-helpmsg="${0##*/}: [OPTIONS]\n\nOPTIONS:\n -h\t\tPrint this help message\n -b\t\tForce backup of boot to ${bootbackupdir}\n -a\t\tUpgrade AUR packages as well (requires pacaur)\n -r\t\tRollback previous upgrades\n -d\t\tSame as -a but upgrades AUR development packages."
+helpmsg="${0##*/}: [OPTIONS]\n\n\
+OPTIONS:\n\
+-h\t\tPrint this help message\n\
+-b\t\tForce backup of boot to \${bootbackupdir}\n\
+-a\t\tUpgrade AUR packages as well (requires pacaur)\n\
+-r\t\tRollback previous upgrades\n\
+-d\t\tSame as -a but upgrades AUR development packages."
+
 pacaurconfig="/etc/xdg/pacaur/config"
 
 msg(){
@@ -41,7 +51,9 @@ bootbackup(){
     if mount | grep -q /boot && [[ $boot != 0 ]] ; then
         [[ -d $bootbackupdir ]] || sudo mkdir -p $bootbackupdir # Make backup directory if it does not exist
         msg "Backing up /boot\n" 
-        if sudo rsync -av --delete /boot/ $bootbackupdir > /dev/null; then # Copy contents of /boot to directory set in $bootbackupdir and delete any extraneous files in the latter directory
+        # Copy contents of /boot to directory set in $bootbackupdir and delete any extraneous files in the 
+        # latter directory
+        if sudo rsync -av --delete /boot/ $bootbackupdir > /dev/null; then
             msg "Done\n"
             return 0
         else 
@@ -62,7 +74,9 @@ aur(){
 
     [[ -z $builddir ]] && builddir=/tmp/pacaurtmp-$USER
 
-    [[ -z $clean || $clean != "false" ]] &&  sudo sed -i '/clean=/d' $pacaurconfig && echo "clean=false" | sudo tee -a $pacaurconfig > /dev/null # Make sure clean option is off in pacaur
+    [[ -z $clean || $clean != "false" ]] &&  
+        sudo sed -i '/clean=/d' $pacaurconfig && 
+        echo "clean=false" | sudo tee -a $pacaurconfig > /dev/null # Make sure clean option is off in pacaur
 
     msg "Checking for updates...\n"
     aurpkgs=$(pacaur --color never -k | awk -F'aur  ' '{print $2}')
@@ -76,11 +90,13 @@ aur(){
     buildpkgs=$(find $builddir -type f -regex ".*\.pkg\.\(tar\|tar\.[gx]z\)")
     if [[ -n $buildpkgs ]]; then
             eval "in_block=1"
-            pre=$(snapper create --type=pre --cleanup-algorithm=number --print-number --description="AUR upgrade") #Take snapshot and store snapshot number in $pre
+            # Take snapshot and store snapshot number in $pre
+            pre=$(snapper create --type=pre --cleanup-algorithm=number --print-number --description="AUR upgrade") 
             msg "New pre snapshot with number ${pre}\n"
             sudo pacman -U --noconfirm $buildpkgs && msg "Packages upgraded\n" || return 1
             msg "Taking post snapshot\n"
-            post=$(snapper create --type=post --cleanup-algorithm=number --print-number --pre-number="$pre") # Take post snapshot and store number in $post
+            # Take post snapshot and store number in $post
+            post=$(snapper create --type=post --cleanup-algorithm=number --print-number --pre-number="$pre") 
             msg "Snapshot block complete: $snpr_cnfg/${pre}..${post}\n"
             echo -e "\nAUR packages upgraded: \n\n$aurpkgs" | sudo tee -a $log_file > /dev/null
             eval "in_block=0"
@@ -104,7 +120,10 @@ rollback(){
     
         'Upgrade')
             clear
-            snaps=$(snapper list --type pre-post | awk -F\| '{print $1"|" $3 "|" $5}'| grep 'AUR upgrade\|Package upgrade') #Show a list of all pre-post snapshots 
+            # Show a list of all pre-post snapshots 
+            snaps=$(
+                snapper list --type pre-post | awk -F\| '{print $1"|" $3 "|" $5}'| grep 'AUR upgrade\|Package upgrade'
+            ) 
             echo "$snaps"
             echo -en "\nNumber of the upgrade you'd like to undo: " 
             read past
@@ -125,7 +144,8 @@ rollback(){
     
         'Timeline snapshot')
             clear
-            snaps=$(snapper list --type single | awk -F\| '{print $1"|" $2}'| sed '1,3d') #Show a list of all single snapshots 
+            # Show a list of all single snapshots 
+            snaps=$(snapper list --type single | awk -F\| '{print $1"|" $2}'| sed '1,3d')
             echo "$snaps"
             echo -en "\nNumber of the snapshot you like to return to: " 
             read past
@@ -142,7 +162,8 @@ rollback(){
         echo -n "Do you want to delete the snapshots you just rolled back? [y/N] "
         read delsnap
         case $delsnap in
-            [Yy]|[Yy][Ee][Ss]) sudo snapper delete $past; [[ -n $post ]] && sudo snapper delete $post; echo "Snapshots deleted" ;;
+            [Yy]|[Yy][Ee][Ss]) sudo snapper delete $past; [[ -n $post ]] && sudo snapper delete $post
+            echo "Snapshots deleted" ;;
         esac
         read -p "All done, press [ENTER] to go back to the menu or Ctrl-C to exit"
         clear
@@ -199,12 +220,14 @@ exec 2> >(sudo tee -a "$log_file" >&2)
 bootbackup 
 
 in_block=1
-pre=$(snapper create --type=pre --cleanup-algorithm=number --print-number --description="Package upgrade${snapComment}") #Take snapshot and store snapshot number in $pre
+# Take snapshot and store snapshot number in $pre
+pre=$(snapper create --type=pre --cleanup-algorithm=number --print-number --description="Package upgrade${snapComment}")
 msg "New pre snapshot with number ${pre}\n"
 sudo pacman -Su --noconfirm # Upgrade packages
 echo
 
-post=$(snapper create --type=post --cleanup-algorithm=number --print-number --pre-number="$pre") # Take post snapshot and store number in $post
+# Take post snapshot and store number in $post
+post=$(snapper create --type=post --cleanup-algorithm=number --print-number --pre-number="$pre") 
 msg "Snapshot block complete: $snpr_cnfg/${pre}..${post}\n"
 echo -e "\nPackages upgraded: \n\n$pkgs" | sudo tee -a $log_file > /dev/null
 sudo sed -i '/Proceed with installation/d' $log_file 
