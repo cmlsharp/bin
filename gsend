@@ -12,7 +12,7 @@ errmsg(){
     exit 1 
 }
 
-while [[ $(echo $1 | head -c 1) == "-" ]]; do 
+while [[ $(head -c 1 <<<"$1") == "-" ]]; do 
     case $1 in 
         -h|--help) echo -e "$USAGE"
             exit 0
