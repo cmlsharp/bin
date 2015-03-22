@@ -31,7 +31,7 @@ mkdir $tmpdir
 cp $@ $tmpdir
 cd $tmpdir
 if [[ $nobuild == 0 ]] ; then
-    makepkg || { echo "Build failed. Aborting"; exit 1; }
+    makepkg -d || { echo "Build failed. Aborting"; exit 1; }
 fi
 mkdir -p $tmpdir/aurpkg
 
