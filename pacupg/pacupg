@@ -86,7 +86,7 @@ aur(){
     fi
     pacaur -cc
     #if 
-    pacaur --color always -Syuw $devel #; then
+    eval "pacaur --color always -Syuw $devel" #; then
     buildpkgs=$(find $builddir -type f -regex ".*\.pkg\.\(tar\|tar\.[gx]z\)")
     if [[ -n $buildpkgs ]]; then
             eval "in_block=1"
