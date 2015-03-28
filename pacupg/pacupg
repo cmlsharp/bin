@@ -42,7 +42,7 @@ msg(){
 
 fscheck(){
     # Make sure root is btrfs
-    if [[ $(mount | grep ' / ' | awk -F'type ' '{print $2}' | cut -d' ' -f1) != "btrfs" ]] > /dev/null; then
+    if [[ $(mount | awk -F'type ' '/\ \/\ /{print $2}' | cut -d' ' -f1) != "btrfs" ]] > /dev/null; then 
         msg "Root not btrfs. Aborting\n"
         exit 1
     fi
