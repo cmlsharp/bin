@@ -46,6 +46,7 @@ fscheck(){
         msg "Root not btrfs. Aborting\n"
         exit 1
     fi
+
 }
 bootbackup(){
     if mount | grep -q /boot && [[ $boot != 0 ]] ; then
