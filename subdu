@@ -7,7 +7,7 @@
 mount="/"
 [[ -n $1 ]] && mount="$1"
 
-sudo btrfs qg show $mount > /tmp/subdu
+sudo btrfs qgroup show $mount > /tmp/subdu
 trap "[[ -f /tmp/subdu ]] && rm  /tmp/subdu" EXIT ERR 15 1 2
-eval "$(sudo btrfs sub list $mount | sed 's/\//\\\//g' | awk '{print "sed -i \"s/0\\/"$2 "/" $9"/\" "}' | sed -e 's/$/\/tmp\/subdu/')"
+eval "$(sudo btrfs subvolume list $mount | sed 's/\//\\\//g' | awk '{print "sed -i \"s/0\\/"$2 "/" $9"/\" "}' | sed -e 's/$/\/tmp\/subdu/')"
 tr -s ' ' '\t'  </tmp/subdu  | sed -e "/^0/d"  | sed 's/qgroupid/subvol/' | column -t 
