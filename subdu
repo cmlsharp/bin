@@ -9,5 +9,5 @@ mount="/"
 
 sudo btrfs qgroup show $mount > /tmp/subdu
 trap "[[ -f /tmp/subdu ]] && rm  /tmp/subdu" EXIT ERR 15 1 2
-eval "$(sudo btrfs subvolume list $mount | sed 's/\//\\\//g' | awk '{print "sed -i -e \"s/"$2 "/"$2 " " $9"/\" "}'| sed -e 's/$/\/tmp\/subdu/')"
+eval "$(sudo btrfs subvolume list $mount | sed 's/\//\\\//g' | awk '{print "sed -i  \"s/"$2 " /"$2 " " $9"/\" "}'| sed -e 's/$/\/tmp\/subdu/')"
 sed 's/qgroupid/subvol qgroupid/' /tmp/subdu | awk 'NF>3' | tr -s ' ' '\t'  | column -t   
