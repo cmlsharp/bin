@@ -65,7 +65,6 @@ bootbackup(){
     
 }
 aur(){
-    msg "This feature is still experimental\n"
     msg "Beginning AUR upgrade\n"
     if ! which pacaur > /dev/null; then
         msg "pacaur not found. Aborting"
@@ -85,8 +84,8 @@ aur(){
         msg "No AUR packages to upgrade.\n"
         return 2
     fi
-    pacaur -cc
     #if 
+    rm -rf $builddir/*
     eval "pacaur --color always -Syuw $devel" #; then
     buildpkgs=$(find $builddir -type f -regex ".*\.pkg\.\(tar\|tar\.[gx]z\)")
     if [[ -n $buildpkgs ]]; then
@@ -110,6 +109,22 @@ aur(){
     #    return 1
     #fi
 }
+
+btrgrub(){
+    msg "Attempting to update grub-cfg\n"
+    sleep .5
+    if [[ -f /etc/grub.d/41_snapshots-btrfs ]]; then
+        if [[ -d /boot/efi/grub ]]; then
+            grubcfg=/boot/efi/grub/grub.cfg
+        elif [[ -d /boot/grub ]]; then
+            grubcfg=/boot/grub/grub.cfg
+        else
+            msg "Grub directory not found"
+        fi
+        sudo grub-mkconfig -o $grubcfg && msg "If you want to boot into the snapshot before this upgrade, select snapshot #${pre} from the grub menu\n"
+    fi 
+}
+
 rollback(){
     PS3="Choice: "
     kernelupg=0
@@ -239,3 +254,4 @@ if [[ $aur == 1 ]]; then
 else
     msg "Log of upgraded packages available at ${log_file}\n"
 fi
+btrgrub
