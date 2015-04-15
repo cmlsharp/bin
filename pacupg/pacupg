@@ -108,6 +108,7 @@ aur(){
     #else
     #    return 1
     #fi
+    btrgrub
 }
 
 btrgrub(){
@@ -251,6 +252,7 @@ in_block=0
 bootbackup 
 if [[ $aur == 1 ]]; then 
     aur
+    exit
 else
     msg "Log of upgraded packages available at ${log_file}\n"
 fi
