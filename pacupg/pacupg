@@ -82,6 +82,7 @@ aur(){
     aurpkgs=$(pacaur --color never -k | awk -F'aur  ' '{print $2}')
     if [[ -z $aurpkgs ]]; then
         msg "No AUR packages to upgrade.\n"
+        [[ $pkgsupgraded == 1 ]] && btrgrub
         return 2
     fi
     #if 
@@ -249,6 +250,7 @@ msg "Snapshot block complete: $snpr_cnfg/${pre}..${post}\n"
 echo -e "\nPackages upgraded: \n\n$pkgs" | sudo tee -a $log_file > /dev/null
 sudo sed -i '/Proceed with installation/d' $log_file 
 in_block=0
+pkgsupgraded=1
 bootbackup 
 if [[ $aur == 1 ]]; then 
     aur
