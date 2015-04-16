@@ -82,7 +82,7 @@ aur(){
     aurpkgs=$(pacaur --color never -k | awk -F'aur  ' '{print $2}')
     if [[ -z $aurpkgs ]]; then
         msg "No AUR packages to upgrade.\n"
-        [[ $pkgsupgraded == 1 ]] && btrgrub
+        [[ $pkgsupgraded == 1 ]] && btrgrub && msg "Log of upgraded packages available at ${log_file}\n"
         return 2
     fi
     #if 
