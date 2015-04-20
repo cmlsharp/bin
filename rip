@@ -1,0 +1,82 @@
+#!/usr/bin/env bash
+pre()
+{
+    clear
+    echo -en "Checking for connection to mmfab-server..."
+    mount | grep -q $libpath || { echo -en "\nmmfab-server not connected. Connecting"; for i in {1..3}; do sleep .5; echo -n "."; done; mount $libpath; } && echo " Done" || exit
+}
+
+ripdvd()
+{
+    echo -en "Movie title: "
+    local title
+    read title
+    if [[ -f $libpath/Movies/"${title}".m4v ]]; then
+        echo -en "The title that you entered already exists. This probably means that you have already burned this disk. Continue? [Y/n]: "
+        read cont
+        case $cont in 
+            [Yy]|[Yy][Ee][Ss]|"") ;;
+            [Nn]|[Nn][Oo]|*) echo -n "Aborting"; sleep 1; ripfunc; ;;
+        esac
+    fi 
+    HandBrakeCLI -i /dev/sr0 -o $libpath/Movies/"${title}".m4v --preset="High Profile" --main-feature  && echo "Done" || exit
+}
+
+riptvshow()
+{
+    local {title,season,clipnum,clip,allclips,episode,cont}
+    echo -en "TV Show Title: "
+    read title
+    [[ -d $libpath/TV/"${title}" ]] || mkdir $libpath/TV/"${title}"
+    echo -en "Season: "
+    read season
+    [[ -d $libpath/TV/"${title}"/"Season $season" ]] || mkdir $libpath/TV/"${title}"/"Season $season"
+    echo "Scanning DVD please wait..."
+    HandBrakeCLI -i /dev/sr0 -t 0 2>&1| grep -E "\+ title ([0-9]|[1-9][0-9]):$|duration:"| sed -r 's/^[[:space:]]+//' | awk -F'\+ ' '{print $2}' | sed 's/title //' | awk 'NR%2{printf $0" ";next;}1'
+    echo -en "\nHow many clips do you want to rip? "
+    read clipnum
+    for i in $(seq 1 $clipnum); do
+        echo -n "Clip number: "
+        read clip
+        allclips+=" $clip"
+    done
+    echo -en "\nFirst episode in range: "
+    read episode
+    if [[ -f $libpath/TV/"${title}"/"Season ${season}"/"$title S:$(printf %02d ${season}) E:$(printf %02d ${episode}).m4v" ]]; then
+        echo -en "The episode that you entered already exists. This probably means you have already burned this disk. Continue? [Y/n]: " 
+        read cont
+        case $cont in 
+            [Yy]|[Yy][Ee][Ss]|"") ;;
+            [Nn]|[Nn][Oo]|*) echo -n "Aborting"; sleep 1; ripfunc; ;;
+        esac
+    fi 
+    for i in $allclips; do
+        HandBrakeCLI --preset="High Profile" -i /dev/sr0 -t $i -o $libpath/TV/"${title}"/"Season ${season}"/"$title S:$(printf %02d ${season}) E:$(printf %02d ${episode}).m4v" && notify-send "Encode of $title episode $episode done"
+	(( episode = $episode + 1 ))
+    done || { echo "Failed"; return 1; }
+}
+
+post()
+{
+    notify-send "All done. Ready for a new disc."
+    echo -en "\n\n\nRefreshing Plex Library... "
+    ssh chad@192.168.1.1 "export LD_LIBRARY_PATH=/usr/pbi/plexmediaserver-amd64/share/plexmediaserver; cd /usr/pbi/plexmediaserver-amd64/share/plexmediaserver; ./Plex\ Media\ Scanner --scan" && echo "Done" ||  echo "Failed" 
+    read -p "Put in a new DVD and press [ENTER] to rip again. Else, press Ctrl-C to quit"
+}
+
+ripfunc()
+{
+    pre
+    select opt in Movie TV; do
+        case $opt in
+            Movie) ripdvd || return ;;
+	    TV) riptvshow || return ;;
+	esac
+	break
+    done
+    post
+    ripfunc
+}
+PS3="Choice: "
+libpath=/home/mmfab/Desktop/scott
+ripfunc
