@@ -9,7 +9,15 @@
 #
 ########################################
 dotfilesdir=~/.dotfiles # change this to your dotfiles directory
+force=0
 change=0
+
+while getopts "f" OPT; do
+    case "${OPT}" in
+        f) force=1 ;;
+        *) echo "Unrecognized argument";;
+    esac
+done
 if [[ ! -d $dotfilesdir/.git ]];then
     echo "You must set up a git repo first. I'd recommend taking a look at this quide http://blog.smalleycreative.com/tutorials/using-git-and-github-to-manage-your-dotfiles/"
     exit 1
@@ -28,6 +36,7 @@ for i in pacman_pkgs aur_pkgs; do
         echo -e "\e[0;32mNo change in ${i}. Ignoring\e[0m"
     fi
 done
+change=$force
 
 if [[ $change == 1 ]]; then #If there was a difference, commit and push
     git commit -vm "Pkgdump script"

@@ -49,7 +49,7 @@ fscheck(){
 
 }
 bootbackup(){
-    if mount | grep -q /boot && [[ $boot != 0 ]] ; then
+    if mount | grep -q /boot && [[ $boot != 2 ]] ; then
         [[ -d $bootbackupdir ]] || sudo mkdir -p $bootbackupdir # Make backup directory if it does not exist
         msg "Backing up /boot\n" 
         # Copy contents of /boot to directory set in $bootbackupdir and delete any extraneous files in the 
@@ -102,6 +102,7 @@ aur(){
             echo -e "\nAUR packages upgraded: \n\n$aurpkgs" | sudo tee -a $log_file > /dev/null
             eval "in_block=0"
             btrgrub
+            sudo mkinitcpio -p linux
             msg "Log of upgraded packages available at ${log_file}\n\n"
             return 0
         else
@@ -228,12 +229,9 @@ if [[ -z $pkgs ]]; then
 fi
 
 if pacman -Qqu | grep -q "^linux$";  then
-    msg "Upgrade to the Linux kernel detected. Enabling backup of /boot\n"
     boot=1
     snapComment=" + kernel upgrade"
 fi
-echo -e "Errors (if any) during upgrade:\n" | sudo tee -a $log_file > /dev/null
-exec 2> >(sudo tee -a "$log_file" >&2)
 
 bootbackup 
 
@@ -247,7 +245,7 @@ echo
 # Take post snapshot and store number in $post
 post=$(snapper create --type=post --cleanup-algorithm=number --print-number --pre-number="$pre") 
 msg "Snapshot block complete: $snpr_cnfg/${pre}..${post}\n"
-echo -e "\nPackages upgraded: \n\n$pkgs" | sudo tee -a $log_file > /dev/null
+echo -e "Packages upgraded: \n\n$pkgs" | sudo tee -a $log_file > /dev/null
 sudo sed -i '/Proceed with installation/d' $log_file 
 in_block=0
 pkgsupgraded=1
@@ -256,6 +254,7 @@ if [[ $aur == 1 ]]; then
     aur
     exit
 else
+    sudo mkinitcpio -p linux
     btrgrub
     msg "Log of upgraded packages available at ${log_file}\n"
 fi
