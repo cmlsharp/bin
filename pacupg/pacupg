@@ -16,7 +16,8 @@
 # available)
 # Log of all errors and a list of upgraded packages (with version numbers pre and post upgrade)
 # If upgrade is interupted, offers to delete pre snapshot
-# Optionally upgrades AUR packages
+# Optionally upgrades AUR packages (requires pacaur)
+# Automatically adds snapshots to grub menu (requires btrfs-grub)
 #
 ###############################################################
 snpr_cnfg=root
@@ -113,13 +114,15 @@ aur(){
 }
 
 btrgrub(){
-    msg "Attempting to update grub-cfg\n"
-    sleep .5
     if [[ -f /etc/grub.d/41_snapshots-btrfs ]]; then
+        msg "Attempting to update grub-cfg\n"
+        sleep .5
         if [[ -d /boot/efi/grub ]]; then
             grubcfg=/boot/efi/grub/grub.cfg
         elif [[ -d /boot/grub ]]; then
             grubcfg=/boot/grub/grub.cfg
+        elif sudo find /boot -name "grub.cfg"; then
+            grubcfg=$(sudo find /boot -name "grub.cfg")
         else
             msg "Grub directory not found"
         fi
