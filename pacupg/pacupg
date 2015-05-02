@@ -20,6 +20,7 @@
 # Automatically adds snapshots to grub menu (requires btrfs-grub)
 #
 ###############################################################
+snpr_cnfg="$(snapper list-configs | tr -d ' ' | grep "|/$" | awk -F'|' '{print $1}')"
 bootbackupdir="/var/local/boot-backup/"
 log_path="/var/local/log/pacupg"
 date=$(date "+%Y-%m-%d-%H%M%S")
@@ -47,12 +48,10 @@ check(){
         return 1
     fi
     # Make sure snapper config exists
-    if [[ -z $(snapper list-configs | tr -d ' ' | grep "|/$" | awk -F'|' '{print $1}') ]]; then
+    if [[ -z $snpr_cnfg ]]; then
         msg "No snapper config found for /\n"
         return 1
     fi
-
-
 }
 bootbackup(){
     if mount | grep -q /boot && [[ $boot == 2 ]] ; then
@@ -88,7 +87,7 @@ aur(){
     aurpkgs=$(pacaur --color never -k | awk -F'aur  ' '{print $2}')
     if [[ -z $aurpkgs ]]; then
         msg "No AUR packages to upgrade.\n"
-        [[ $pkgsupgraded == 1 ]] && btrgrub && msg "Log of upgraded packages available at ${log_file}\n"
+        [[ $pkgsupgraded == 1 ]] && { btrgrub;  msg "Log of upgraded packages available at ${log_file}\n"; return; }
         return 2
     fi
     #if 
@@ -121,7 +120,6 @@ aur(){
 btrgrub(){
     if [[ -f /etc/grub.d/41_snapshots-btrfs ]]; then
         msg "Attempting to update grub-cfg\n"
-        sleep .5
         if [[ -d /boot/efi/grub ]]; then
             grubcfg=/boot/efi/grub/grub.cfg
         elif [[ -d /boot/grub ]]; then
@@ -130,8 +128,11 @@ btrgrub(){
             grubcfg=$(sudo find /boot -name "grub.cfg")
         else
             msg "Grub directory not found"
+            return 1
         fi
-        sudo grub-mkconfig -o $grubcfg && msg "If you want to boot into the snapshot before this upgrade, select snapshot #${pre} from the grub menu\n"
+        sudo grub-mkconfig -o $grubcfg && 
+        msg "Done. If you want to boot into the snapshot before this upgrade, select snapshot ${pre} from the grub menu\n" || 
+        msg "grub-mkconfig terminated with an exit code of ${?}"
     fi 
 }
 
@@ -200,8 +201,7 @@ menu
 }
 
 check || exit 
-snpr_cnfg="$(snapper list-configs | tr -d ' ' | grep "|/$" | awk -F'|' '{print $1}')"
-TEMP="$(getopt -o h,a,r,d,b -l boot,help,aur,rollback,devel -n "$0" -- "$@")"
+TEMP="$(getopt -o h,a,r,d,b -l boot,help,aur,rollback,devel -n "${0##*/}" -- "$@")" || exit 1
 eval set -- "$TEMP"
 while true; do
    case "${1}" in
