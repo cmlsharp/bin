@@ -72,7 +72,7 @@ bootbackup(){
 aur(){
     msg "Beginning AUR upgrade\n"
     if ! which pacaur > /dev/null; then
-        msg "pacaur not found. Aborting"
+        msg "pacaur not found. Aborting\n"
         exit 1
     fi
     source $pacaurconfig
