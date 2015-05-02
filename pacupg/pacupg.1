@@ -3,28 +3,31 @@
 pacupg \- wrap upgrades in btrfs snapshots with optional backups of /boot
 .SH SYNOPSYS
 .B pacupg
-[\fB\-h\fR]
-[\fB\-b\fR]
-[\fB\-a\fR]
-[\fB\-r\fR]
+[\fB\-h|\-\-help\fR]
+[\fB\-b|\-\-boot\fR]
+[\fB\-a|\-\-aur\fR]
+[\fB\-r|\-\-rollback\fR]
+[\fB\-d|\-\-devel\fR]
 .SH DESCRIPTION
 .B pacupg
-wrap upgrades in btrfs snapshots with optional backups of /boot (happens automatically when kernel update detected)
+wrap upgrades in btrfs snapshots with optional backups of /boot (happens automatically when kernel update detected and /boot is on separate partition) to /var/local/bootbackup/
 .TP
 The script logs every upgraded package (with version numbers) to /var/local/log/pacupg/
+.TP
+Additionally, if \fIbtrfs-grub\fR is installed, this script will regenerate grub.cfg to include the upgrade snapshots.
 .SH OPTIONS
 .TP
-.BR \-h\fR
+.BR \-h,\-\-help\fR
 Display help message
 .TP
-.BR \-b\fR
+.BR \-b,\-\-boot\fR
 Force boot backup even if /boot is not on a separate partition
 .TP
-.BR \-a\fR
+.BR \-a,\-\-aur\fR
 Upgrade AUR packages as well (requires pacaur)
 .TP
-.BR \-r\fR
+.BR \-r,\-\-rollback\fR
 Rollback previous upgrades
 .TP
-.BR \-d\fR
+.BR \-d,\-\-devel\fR
 Same as -a but upgrades AUR development packages as well.
