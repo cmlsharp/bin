@@ -20,7 +20,6 @@
 # Automatically adds snapshots to grub menu (requires btrfs-grub)
 #
 ###############################################################
-snpr_cnfg=root
 bootbackupdir="/var/local/boot-backup/"
 log_path="/var/local/log/pacupg"
 date=$(date "+%Y-%m-%d-%H%M%S")
@@ -41,12 +40,18 @@ msg(){
     echo -en "\e[0;32m$(tput bold)> ${@}$(tput sgr0)\e[0m"
 }
 
-fscheck(){
+check(){
     # Make sure root is btrfs
     if [[ $(mount | awk -F'type ' '/\ \/\ /{print $2}' | cut -d' ' -f1) != "btrfs" ]] > /dev/null; then 
         msg "Root not btrfs. Aborting\n"
-        exit 1
+        return 1
     fi
+    # Make sure snapper config exists
+    if [[ -z $(snapper list-configs | tr -d ' ' | grep "|/$" | awk -F'|' '{print $1}') ]]; then
+        msg "No snapper config found for /\n"
+        return 1
+    fi
+
 
 }
 bootbackup(){
@@ -194,7 +199,8 @@ rollback(){
 menu
 }
 
-fscheck
+check || exit 
+snpr_cnfg="$(snapper list-configs | tr -d ' ' | grep "|/$" | awk -F'|' '{print $1}')"
 TEMP="$(getopt -o h,a,r,d,b -l boot,help,aur,rollback,devel -n "$0" -- "$@")"
 eval set -- "$TEMP"
 while true; do
