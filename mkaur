@@ -8,15 +8,15 @@
 helpmsg="${0##*/} [OPTIONS] FILES\n\n-h\t\tPrint this help message\n-u\t\tUpload the package to AUR\n-n\t\tDon't try building package before upload"
 tmpdir=/tmp/scratch
 nobuild=0
-while getopts "hnu" OPT; do
+while getopts "hnb" OPT; do
     case $OPT in
         h) echo -e $helpmsg; exit 0 ;;
-        u) upload=1;;
-        n) nobuild=1;;
+        n) noupload=1;;
+        b) nobuild=1;;
         *) echo "Unrecognized argument"; exit 1 ;;
     esac
 done
-[[ $upload == 1 ]] && shift
+[[ $noupload == 1 ]] && shift
 [[ $nobuild == 1 ]] && shift
 if (( $# == 0 )); then
     echo "This script requires arguments (the files you want to package)"
@@ -41,7 +41,7 @@ done
 cd ${tmpdir}/aurpkg
 mkaurball
 
-if [[ $upload == 1 ]]; then
+if [[ ! $noupload == 1 ]]; then
     if which aurploader > /dev/null; then
         aurploader -k -a -l ~/.config/aurploader
     else
