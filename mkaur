@@ -6,8 +6,9 @@
 #
 #########################
 helpmsg="${0##*/} [OPTIONS] FILES\n\n-h\t\tPrint this help message\n-u\t\tUpload the package to AUR\n-n\t\tDon't try building package before upload"
-tmpdir=/tmp/scratch
+tmpdir=/tmp/mkaur
 nobuild=0
+noupload=0
 while getopts "hnb" OPT; do
     case $OPT in
         h) echo -e $helpmsg; exit 0 ;;
@@ -23,22 +24,22 @@ if (( $# == 0 )); then
     exit 1
 fi
 
-if [[ -d $tmpdir ]]; then 
-    rm -rf $tmpdir
+if [[ -d "$tmpdir" ]]; then 
+    rm -rf "$tmpdir"
 fi
 
-mkdir $tmpdir
-cp $@ $tmpdir
-cd $tmpdir
+mkdir "$tmpdir"
+cp "$@" "$tmpdir"
+cd "$tmpdir"
 if [[ $nobuild == 0 ]] ; then
     makepkg -d || { echo "Build failed. Aborting"; exit 1; }
 fi
-mkdir -p $tmpdir/aurpkg
+mkdir -p "$tmpdir/aurpkg"
 
-for i in ${@##*/}; do 
-    mv ${tmpdir}/${i} ${tmpdir}/aurpkg/${i}
+for i in "${@##*/}"; do 
+    mv "${tmpdir}/${i}" "${tmpdir}/aurpkg/${i}"
 done
-cd ${tmpdir}/aurpkg
+cd "${tmpdir}/aurpkg"
 mkaurball
 
 if [[ ! $noupload == 1 ]]; then
