@@ -51,3 +51,4 @@ if [[ ! $noupload == 1 ]]; then
 else 
     echo "Package located in $tmpdir/aurpkg"
 fi
+echo Hello
