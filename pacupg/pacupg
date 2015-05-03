@@ -28,11 +28,11 @@ boot=0
 aur=0
 helpmsg="${0##*/}: [OPTIONS]\n\n\
 OPTIONS:\n\
--h|--help\t\tPrint this help message\n\
--b|--boot\t\tForce backup of boot to \${bootbackupdir}\n\
--a|--aur\t\tUpgrade AUR packages as well (requires pacaur)\n\
--r|--rollback\t\tRollback previous upgrades\n\
--d|--devel\t\tSame as -a but upgrades AUR development packages."
+-h,--help\t\tPrint this help message\n\
+-b,--boot\t\tForce backup of boot to \${bootbackupdir}\n\
+-a,--aur\t\tUpgrade AUR packages as well (requires pacaur)\n\
+-r,--rollback\t\tRollback previous upgrades\n"
+#-d,--devel\t\tSame as -a but upgrades AUR development packages. (Broken due to upstream bug in pacaur)"
 
 pacaurconfig="/etc/xdg/pacaur/config"
 
@@ -200,7 +200,7 @@ menu
 }
 
 check || exit 
-TEMP="$(getopt -o h,a,r,d,b -l boot,help,aur,rollback,devel -n "${0##*/}" -- "$@")" || exit 1
+TEMP="$(getopt -o h,a,r,b -l boot,help,aur,rollback -n "${0##*/}" -- "$@")" || exit 1
 eval set -- "$TEMP"
 while true; do
    case "${1}" in
@@ -208,7 +208,7 @@ while true; do
        -h|--help) echo -e $helpmsg; exit 0;;
        -b|--boot) boot=2; shift;;
        -r|--rollback) rollback; shift;;
-       -d|--devel) aur=1; devel="--devel" ;shift;;
+      # -d|--devel) msg "Broken due to upstream bug in pacaur. Running ${0##*/} -a\n"; aur=1; shift ;;  #aur=1; devel="--devel" ;shift;;
        --) break ;;
        *) msg "Unrecognized argument\n"; echo -e $helpmsg; exit 1; ;;
    esac
