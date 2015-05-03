@@ -89,9 +89,8 @@ aur(){
         [[ $pkgsupgraded == 1 ]] && { btrgrub;  msg "Log of upgraded packages available at ${log_file}\n"; return; }
         return 2
     fi
-    #if 
     rm -rf "$builddir" && mkdir "$builddir"
-    eval "pacaur --color always -Syuw $devel" #; then
+    if eval "pacaur --color always -Syuw $devel"; then
     buildpkgs=$(find $builddir -type f -regex ".*\.pkg\.\(tar\|tar\.[gx]z\)")
     if [[ -n $buildpkgs ]]; then
             eval "in_block=1"
@@ -111,9 +110,10 @@ aur(){
         else
             return 2
         fi
-    #else
-    #    return 1
-    #fi
+    else
+        msg "Download/build failed. Aborting.\n"
+        return 1
+    fi
 }
 
 btrgrub(){
