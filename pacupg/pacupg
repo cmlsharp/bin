@@ -9,8 +9,7 @@
 # This script assumes your snapper config is called 'root'. If needed, change this in the snpr_cnfg variable below
 #
 #
-# What this script does:
-#
+# What this script does: #
 # Wraps package upgrade in btrfs snapshots
 # If /boot is on a separate partition, and the kernel is being upgraded, it backs up /boot (command line flag also 
 # available)
@@ -76,12 +75,12 @@ aur(){
         exit 1
     fi
     source $pacaurconfig
+    [[ -z $clean || $clean != "true" ]] &&  
+        sudo sed -i '/clean=/d' $pacaurconfig && 
+        echo "clean=true" | sudo tee -a $pacaurconfig > /dev/null # Make sure clean option is off in pacaur
 
     [[ -z $builddir ]] && builddir=/tmp/pacaurtmp-$USER
 
-    [[ -z $clean || $clean != "false" ]] &&  
-        sudo sed -i '/clean=/d' $pacaurconfig && 
-        echo "clean=false" | sudo tee -a $pacaurconfig > /dev/null # Make sure clean option is off in pacaur
 
     msg "Checking for updates...\n"
     aurpkgs=$(pacaur --color never -k | awk -F'aur  ' '{print $2}')
@@ -91,7 +90,7 @@ aur(){
         return 2
     fi
     #if 
-    rm -rf $builddir/*
+    rm -rf "$builddir" && mkdir "$builddir"
     eval "pacaur --color always -Syuw $devel" #; then
     buildpkgs=$(find $builddir -type f -regex ".*\.pkg\.\(tar\|tar\.[gx]z\)")
     if [[ -n $buildpkgs ]]; then
@@ -268,3 +267,4 @@ else
     btrgrub
     msg "Log of upgraded packages available at ${log_file}\n"
 fi
+# vim:set sts=4 sw=4 et filetype=sh syntax=sh
