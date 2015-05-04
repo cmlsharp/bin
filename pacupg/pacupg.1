@@ -7,6 +7,7 @@ pacupg \- wrap upgrades in btrfs snapshots with optional backups of /boot
 [\fB\-b|\-\-boot\fR]
 [\fB\-a|\-\-aur\fR]
 [\fB\-r|\-\-rollback\fR]
+[\fB\-d|\-\-devel\fR]
 .SH DESCRIPTION
 .B pacupg
 wrap upgrades in btrfs snapshots with optional backups of /boot (happens automatically when kernel update detected and /boot is on separate partition) to /var/local/bootbackup/
@@ -27,3 +28,6 @@ Upgrade AUR packages as well (requires pacaur)
 .TP
 .BR \-r,\-\-rollback\fR
 Rollback previous upgrades
+.TP
+.BR \-d,\-\-devel\fR
+Same as -a but upgrades AUR development packages as well.
