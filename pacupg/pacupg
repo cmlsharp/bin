@@ -29,7 +29,7 @@ aur=0
 helpmsg="${0##*/}: [OPTIONS]\n\n\
 OPTIONS:\n\
 -h,--help\t\tPrint this help message\n\
--b,--boot\t\tForce backup of boot to \${bootbackupdir}\n\
+-b,--boot\t\tForce backup of boot to ${bootbackupdir}\n\
 -a,--aur\t\tUpgrade AUR packages as well (requires pacaur)\n\
 -r,--rollback\t\tRollback previous upgrades\n\
 -d,--devel\t\tSame as -a but upgrades AUR development packages. (Broken due to upstream bug in pacaur)"
