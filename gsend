@@ -38,7 +38,7 @@ while [[ $(head -c 1 <<<"$1") == "-" ]]; do
     esac
 done
 
-if [[ $# -lt 2 ]]; then #If less than two arguments supplied excluding arguments, exit script.
+if (( $# -lt 2 )); then #If less than two arguments supplied excluding arguments, exit script.
     echo "${0##*/}: This script requres at least two arguments (excluding parameters)"
     echo "Execute ${0##*/} -h or ${0##*/} --help for usage instructions"
     exit 1
