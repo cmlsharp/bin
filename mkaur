@@ -5,20 +5,23 @@
 # Purpose: Ease the process of uploading packages to the AUR
 #
 #########################
-helpmsg="${0##*/} [OPTIONS] FILES\n\n-h\t\tPrint this help message\n-u\t\tUpload the package to AUR\n-n\t\tDon't try building package before upload"
+helpmsg="${0##*/} [OPTIONS] FILES\n\n-h\t\tPrint this help message\n-u\t\tDon't upload the package to AUR\n-n\t\tDon't try building package before creating the src.tar.gz"
 tmpdir=/tmp/mkaur
 nobuild=0
 noupload=0
+if (( $# == 0 )); then
+    echo "ERROR: No arguments. Please specify the files you want to add to the AUR package (e.g. the PKGBUILD, .install script etc.)"
+    echo -e "\n$helpmsg"
+    exit 1
+fi
 while getopts "hnb" OPT; do
     case $OPT in
         h) echo -e $helpmsg; exit 0 ;;
-        n) noupload=1;;
-        b) nobuild=1;;
+        u) noupload=1; shift;;
+        b) nobuild=1; shift;;
         *) echo "Unrecognized argument"; exit 1 ;;
     esac
 done
-[[ $noupload == 1 ]] && shift
-[[ $nobuild == 1 ]] && shift
 if (( $# == 0 )); then
     echo "This script requires arguments (the files you want to package)"
     exit 1
