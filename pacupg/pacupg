@@ -37,18 +37,22 @@ OPTIONS:\n\
 pacaurconfig="/etc/xdg/pacaur/config"
 
 msg(){
-    echo -en "\e[0;32m$(tput bold)> ${@}$(tput sgr0)\e[0m"
+    echo -en "\e[0;32m$(tput bold)> "${@}"$(tput sgr0)\e[0m"
+}
+
+warn(){
+    echo -en "\e[0;31m$(tput bold)! "${@}"$(tput sgr0)\e[0m"
 }
 
 check(){
     # Make sure root is btrfs
     if [[ $(mount | awk -F'type ' '/\ \/\ /{print $2}' | cut -d' ' -f1) != "btrfs" ]] > /dev/null; then 
-        msg "Root not btrfs. Aborting\n"
+        warn "Root not btrfs. Aborting\n"
         return 1
     fi
     # Make sure snapper config exists
     if [[ -z $snpr_cnfg ]]; then
-        msg "No snapper config found for /\n"
+        warn "No snapper config found for /\n"
         return 1
     fi
 }
@@ -62,7 +66,7 @@ bootbackup(){
             msg "Done\n"
             return 0
         else 
-            msg "Boot backup failed. Aborting\n" | sudo tee -a $log_file 1>&2
+            warn "Boot backup failed. Aborting\n" | sudo tee -a $log_file 1>&2
             exit 3
         fi
     fi
@@ -71,7 +75,7 @@ bootbackup(){
 aur(){
     msg "Beginning AUR upgrade\n"
     if ! which pacaur > /dev/null; then
-        msg "pacaur not found. Aborting\n"
+        warn "pacaur not found. Aborting\n"
         exit 1
     fi
     source $pacaurconfig
@@ -101,6 +105,9 @@ aur(){
             msg "Taking post snapshot\n"
             # Take post snapshot and store number in $post
             post=$(snapper create --type=post --cleanup-algorithm=number --print-number --pre-number="$pre") 
+            for pkg in "$buildpkgs"; do 
+                rm $pkg
+            done
             msg "Snapshot block complete: $snpr_cnfg/${pre}..${post}\n"
             echo -e "\nAUR packages upgraded: \n\n$aurpkgs" | sudo tee -a $log_file > /dev/null
             eval "in_block=0"
@@ -111,7 +118,7 @@ aur(){
             return 2
         fi
     else
-        msg "Download/build failed. Aborting.\n"
+        warn "Download/build failed. Aborting.\n"
         return 1
     fi
 }
@@ -126,12 +133,12 @@ btrgrub(){
         elif sudo find /boot -name "grub.cfg"; then
             grubcfg=$(sudo find /boot -name "grub.cfg")
         else
-            msg "Grub directory not found"
+            warn "Grub directory not found"
             return 1
         fi
         sudo grub-mkconfig -o $grubcfg && 
         msg "Done. If you want to boot into the snapshot before this upgrade, select snapshot ${pre} from the grub menu\n" || 
-        msg "grub-mkconfig terminated with an exit code of ${?}"
+        warn "grub-mkconfig terminated with an exit code of ${?}"
     fi 
 }
 
@@ -140,9 +147,9 @@ rollback(){
     kernelupg=0
     clear
     menu(){
-    echo "What do you want to rollback?"
+    msg "What do you want to rollback?\n"
     select rollback_type in 'Timeline snapshot' 'Upgrade' 'Quit'; do
-        case $rollback_type in 
+        case "$rollback_type" in 
     
         'Upgrade')
             clear
@@ -151,10 +158,10 @@ rollback(){
                 snapper list --type pre-post | awk -F\| '{print $1"|" $3 "|" $5}'| grep 'AUR upgrade\|Package upgrade'
             ) 
             echo "$snaps"
-            echo -en "\nNumber of the upgrade you'd like to undo: " 
+            msg "Number of the upgrade you'd like to undo: " 
             read past
             if ! grep -q $past <<< $snaps; then
-                echo "No such snapshot. Quiting."
+                warn "No such snapshot. Quiting.\n"
                 exit 1
             fi
             post=$((past+1))
@@ -173,10 +180,10 @@ rollback(){
             # Show a list of all single snapshots 
             snaps=$(snapper list --type single | awk -F\| '{print $1"|" $2}'| sed '1,3d')
             echo "$snaps"
-            echo -en "\nNumber of the snapshot you like to return to: " 
+            msg "Number of the snapshot you like to return to: " 
             read past
             if ! grep -q $past <<< $snaps; then
-                echo "No such snapshot. Quiting."
+                warn "No such snapshot. Quiting.\n"
                 exit 1
             fi
             current=$(snapper create --print-number)
@@ -185,11 +192,11 @@ rollback(){
             ;; 
         'Quit') exit 0;;
         esac
-        echo -n "Do you want to delete the snapshots you just rolled back? [y/N] "
+        msg "Do you want to delete the snapshots you just rolled back? [y/N] "
         read delsnap
         case $delsnap in
             [Yy]|[Yy][Ee][Ss]) sudo snapper delete $past; [[ -n $post ]] && sudo snapper delete $post
-            echo "Snapshots deleted" ;;
+            msg "Snapshots deleted" ;;
         esac
         read -p "All done, press [ENTER] to go back to the menu or Ctrl-C to exit"
         clear
@@ -210,7 +217,6 @@ while true; do
        -r|--rollback) rollback; shift;;
        -d|--devel) aur=1; devel="--devel" ;shift;;
        --) break ;;
-       *) msg "Unrecognized argument\n"; echo -e $helpmsg; exit 1; ;;
    esac
 done
  
@@ -218,7 +224,7 @@ done
 
 quit() { # Run cleanup code upon exit or error
     if [[ "$in_block" = "1" ]]; then
-        msg "WARNING: Aborting from pre/post snapshot block Do you want to remove pre snapshot ${pre}? [Y/n]: "
+        warn "WARNING: Aborting from pre/post snapshot block Do you want to remove pre snapshot ${pre}? [Y/n]: "
         read remshot
         case $remshot in 
             ""|[Yy]|[Yy][Ee][Ss])sudo snapper delete $pre; msg "Snapshot removed\n"; in_block=0; exit;; 
