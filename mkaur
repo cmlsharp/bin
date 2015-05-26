@@ -5,25 +5,56 @@
 # Purpose: Ease the process of uploading packages to the AUR
 #
 #########################
-helpmsg="${0##*/} [OPTIONS] FILES\n\n-h\t\tPrint this help message\n-u\t\tDon't upload the package to AUR\n-n\t\tDon't try building package before creating the src.tar.gz"
+helpmsg="${0##*/} [OPTIONS] FILES\n\n-h\t\tPrint this help message\n-u\t\tDon't upload the package to AUR\n-n\t\tDon't try building package before creating the src.tar.gz\n-4\t\tUpload to aur4.archlinux.org"
 tmpdir=/tmp/mkaur
 nobuild=0
+aur4=0
 noupload=0
+aur4(){
+   mksrcinfo
+   local pkgname 
+   eval $(grep "^pkgname=" "${tmpdir}/aurpkg/PKGBUILD") 
+   mkdir -p "${tmpdir}/aur4-git"
+   git clone ssh+git://aur4.archlinux.org/${pkgname}.git "${tmpdir}/aur4-git"
+   shopt -s dotglob
+   mv ${tmpdir}/aurpkg/* ${tmpdir}/aur4-git/
+   cd "${tmpdir}/aur4-git"
+   git add *
+   if (( $noupload != 1 )); then
+       git commit
+       git push origin master
+   else
+       echo "Repo ready to be commited in $tmpdir/aur4-git"
+   fi
+}
+
+aur3(){
+    mkaurball 
+    find "${tmpdir}/aurpkg/" -type f \( -not -name  '*.src.tar.gz' \) -delete
+    
+    if (( $noupload != 1 )); then
+        if which aurploader > /dev/null; then
+            aurploader -k -a -l ~/.config/aurploader
+        else
+            xdg-open https://aur.archlinux.org/submit/
+        fi
+    else 
+        echo "Package located in $tmpdir/aurpkg"
+    fi
+}
+while [[ $(head -c 1 <<<"$1") == "-" ]]; do
+    case $1 in
+        -h) echo -e $helpmsg; exit 0 ;;
+        -u) noupload=1; shift;;
+        -b) nobuild=1; shift;;
+        -4) aur4=1;shift;;
+        -*) echo "Unrecognized argument $1"; exit 1 ;;
+    esac
+done
+
 if (( $# == 0 )); then
     echo "ERROR: No arguments. Please specify the files you want to add to the AUR package (e.g. the PKGBUILD, .install script etc.)"
     echo -e "\n$helpmsg"
-    exit 1
-fi
-while getopts "hnb" OPT; do
-    case $OPT in
-        h) echo -e $helpmsg; exit 0 ;;
-        u) noupload=1; shift;;
-        b) nobuild=1; shift;;
-        *) echo "Unrecognized argument"; exit 1 ;;
-    esac
-done
-if (( $# == 0 )); then
-    echo "This script requires arguments (the files you want to package)"
     exit 1
 fi
 
@@ -34,7 +65,7 @@ fi
 mkdir "$tmpdir"
 cp "$@" "$tmpdir"
 cd "$tmpdir"
-if [[ $nobuild == 0 ]] ; then
+if (( $nobuild == 0 )) ; then
     makepkg -d || { echo "Build failed. Aborting"; exit 1; }
 fi
 mkdir -p "$tmpdir/aurpkg"
@@ -42,15 +73,10 @@ mkdir -p "$tmpdir/aurpkg"
 for i in "${@##*/}"; do 
     mv "${tmpdir}/${i}" "${tmpdir}/aurpkg/${i}"
 done
-cd "${tmpdir}/aurpkg"
-mkaurball
 
-if [[ ! $noupload == 1 ]]; then
-    if which aurploader > /dev/null; then
-        aurploader -k -a -l ~/.config/aurploader
-    else
-        xdg-open https://aur.archlinux.org/submit/
-    fi
-else 
-    echo "Package located in $tmpdir/aurpkg"
+cd "${tmpdir}/aurpkg"
+if (( $aur4 == 1 )); then 
+    aur4 
+else
+    aur3
 fi
