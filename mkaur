@@ -8,10 +8,10 @@
 helpmsg="${0##*/} [OPTIONS] FILES\n\n-h\t\tPrint this help message\n-u\t\tDon't upload the package to AUR\n-n\t\tDon't try building package before creating the src.tar.gz\n-4\t\tUpload to aur4.archlinux.org"
 tmpdir=/tmp/mkaur
 nobuild=0
-aur4=0
+aur3=0
 noupload=0
 aur4(){
-   mksrcinfo
+   [[ -f ${tmpdir}/aurpkg/.SRCINFO ]] || mksrcinfo
    local pkgname 
    eval $(grep "^pkgname=" "${tmpdir}/aurpkg/PKGBUILD") 
    mkdir -p "${tmpdir}/aur4-git"
@@ -45,11 +45,12 @@ aur3(){
 while [[ $(head -c 1 <<<"$1") == "-" ]]; do
     case $1 in
         -h) echo -e $helpmsg; exit 0 ;;
-        -u) noupload=1; shift;;
-        -b) nobuild=1; shift;;
-        -4) aur4=1;shift;;
+        -u) noupload=1 ;;
+        -b) nobuild=1 ;;
+        -3) aur3=1 ;;
         -*) echo "Unrecognized argument $1"; exit 1 ;;
     esac
+    shift
 done
 
 if (( $# == 0 )); then
@@ -66,8 +67,11 @@ mkdir "$tmpdir"
 cp "$@" "$tmpdir"
 cd "$tmpdir"
 if (( $nobuild == 0 )) ; then
-    makepkg -d || { echo "Build failed. Aborting"; exit 1; }
-fi
+    makepkg -d 
+else
+    makepkg -o -d
+fi || { echo "Build failed. Aborting"; exit 1; }
+
 mkdir -p "$tmpdir/aurpkg"
 
 for i in "${@##*/}"; do 
@@ -75,8 +79,8 @@ for i in "${@##*/}"; do
 done
 
 cd "${tmpdir}/aurpkg"
-if (( $aur4 == 1 )); then 
-    aur4 
+if (( $aur3 == 1 )); then 
+    aur3 
 else
-    aur3
+    aur4
 fi
