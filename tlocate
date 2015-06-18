@@ -1,0 +1,246 @@
+#!/usr/bin/env bash
+techo(){
+    echo -ne "${0##*/}: $@"
+}
+techoerr(){
+    >&2 echo -ne "tlocate: $@"
+}
+updateTxt(){
+    separator="###################################################"
+    [[ -n $pruneDirs ]] && \
+        findOptsDirs=$(for dir in "${pruneDirs[@]}"; do echo -n " -path '$dir' -o";done)
+
+    [[ -n $pruneNames ]] && \
+        findOptsNames=$(for name in "${pruneNames[@]}"; do echo -n " -path '*/${name}' -o";done)
+
+    [[ -n $pruneFS ]] && \
+        findOptsFS=$(for badFSDir in \
+        $(for fs in "${pruneFS[@]}"; do \
+            mount  | grep "type $fs" | awk '{print $3}';\
+        done); do \
+        echo -n " -path '$badFSDir' -o";\
+    done | sed 's/ -o$//')
+
+    (( quiet == 0 )) && techo "Indexing files requires root. Checking for sudo privileges.\n"
+    (( showCmd == 0 )) && { sudo -v || exit 1; }
+    (( quiet == 0 )) && techo "Done\n"
+    (( showCmd == 0 )) && echo -e "#$date\n$separator$(for file in "${configFiles[@]}"; do [[ -f "$file" ]] && { echo -e "\n#$file\n$separator"; sed '/^$/d' "$file" | grep -vE '^#' | sed 's/^/#/' | grep prune; };done)" | sudo tee "$txtPath" > /dev/null
+    (( quiet == 0 )) && techo "Indexing files..."
+    if (( showCmd == 1 )); then
+        echo "sudo find / \( $findOptsDirs $findOptsNames $findOptsFS \) -prune -o -print 2>/dev/null |  sudo tee -a $txtPath >/dev/null"
+    else
+        eval "sudo find / \( $findOptsDirs $findOptsNames $findOptsFS \) -prune -o -print 2>/dev/null | sudo tee -a $txtPath >/dev/null"
+    fi
+    (( quiet == 0 )) && echo "Done."
+}
+
+queryTxt(){
+    (( $# == 0 )) && { techoerr "ERROR: no query for which to search\nRun ${0##*/} --help for more information\n"; return 1;}
+    if ! head -n1 $txtPath | grep -Eq '^#[0-1][0-9]/[0-3][0-9]/[0-9][0-9] +at +[01]?[0-9]:[0-5][0-9] [AP]M$' ; then
+        techoerr "$txtPath doesn't seem to be a valid ${0##*/} text file. To create one, run \`${0##*/} $(\
+            if [[ $txtPath != /etc/${0##*/}.txt ]]; then \
+            echo -n "-t $txtPath";\
+            fi\
+            ) -u\`.\nWARNING: This will overwrite the contents of $txtPath\n"
+        exit 1 
+    fi
+
+    [[ $and == 1 ]] && \
+        grepCmd=$(echo -n "grep $grepArgs '$(if (( findBasename == 1 )); then echo -n "*/.*${1}[^/]*$"; else echo -n "$1";fi)' $txtPath "; \
+        shift;\
+        for term in "$@"; do\
+            echo -n "| grep $grepArgs '$(if (( findBasename == 1 )); then echo -n "*/.*${term}[^/]*$"; else echo -n "$term";fi)'";\
+        done) || \
+        grepCmd="grep $grepArgs '$(\
+        for term in "$@"; do \
+            echo -n "$(if (( findBasename == 1 )); then echo -n "*/.*${term}[^/]*$"; else echo -n "$term";fi)$(if ! grep -q --  '-E' <<<"$grepArgs"; then \
+                echo -n '\';\
+            fi)|";\
+            done | \
+            sed 's/|$//' | sed 's/\\$//')' $txtPath" 
+
+    if (( checkExist == 1 )); then
+        wholeCmd="$grepCmd |  grep -vE '^#'| while read path; do $(if (( customTestCount > 1 )); then echo -n "{ $(sed 's/ $//' <<<"$checkExistTest"); }";else echo -n "$checkExistTest";fi) && echo \$path; done $headCmd $nullCmd  $countCmd"
+
+    else
+        wholeCmd="$grepCmd  | grep -vE '^#' $headCmd $nullCmd $countCmd"
+    fi
+    (( showCmd == 1 )) && { echo "$wholeCmd"; return; } || { [[ -z $(eval "$wholeCmd") ]] && return 1 || eval "$wholeCmd"; }
+
+    (( quiet == 0 )) && techo "List last updated $(head -n1 $txtPath | sed 's/#//' | tr -s ' ' ' ')\n"
+}
+txtStats(){
+    eval "$(grep -E '^#' $txtPath | sed 's/^#//' | grep -E "^prune(FS|Names|Dirs)=\(")"
+    echo "$(tput bold)Text file path:$(tput sgr0) $txtPath"
+    echo
+    echo "$(tput bold)Total entries in text file:$(tput sgr0) $( grep -Ev "^#" "$txtPath" | wc -l | awk '{print $1}')"
+    echo
+    echo "$(tput bold)Text file last updated:$(tput sgr0) $(head -n1 "$txtPath" | sed 's/^#//' | tr -s ' ' ' ')"
+    echo
+    echo "$(tput bold)Config file(s):$(tput sgr0) $(for file in "${configFiles[@]}"; do [[ -f "$file" ]] && echo -n "${file}, "; done | sed 's/, $//')"
+    echo
+    echo "$(tput bold)Pruned filesystems:$(tput sgr0) ${pruneFS[@]}"
+    echo
+    echo "$(tput bold)Pruned directories:$(tput sgr0) ${pruneDirs[@]}"
+    echo
+    echo "$(tput bold)Pruned names:$(tput sgr0) ${pruneNames[@]}"
+}
+customTest(){
+    (( noCustom == 0 )) && findBasename=1 
+    checkExist=1 
+    eval "checkExistTest+='[[ $@ \$path ]] $checkLogOp '"
+    customTestCount=$(($customTestCount + 1 ))
+}
+checkConflicts(){
+    if [[ -n $countCmd && -n $nullCmd ]]; then
+        nullCmd=""
+    fi
+    [[ -n $checkExistTest ]] && checkExistTest=$(sed -r  's/[|&]{2} *$//' <<<"$checkExistTest")
+    (( findWholename == 1 )) && findBasename=0
+    if ! grep -q -- "-E" <<<"$grepArgs" && (( findBasename == 1 )); then
+        techoerr "${0##*/}: --basename requires regexes.\nA possible workaround would be to alter your query by adding a '\' before each character that would be interpreted as a regex (e.g. \()[].?+* etc.)\n"
+        exit 1
+    fi
+    if [[ "$checkLogOp" == "||" ]] && grep -q -- '&&' <<<"$checkExistTest"; then
+        checkExistTest=$(sed 's/&&/||/' <<<"$checkExistTest")
+    fi
+}
+
+configFiles=( "/etc/${0##*/}.conf" "$HOME/.config/${0##*/}.conf" )
+txtPath=/etc/${0##*/}.txt
+date=$(date "+%D at %l:%M %p")
+
+and=0
+update=0
+showCmd=0
+findWholename=0
+stats=0
+noCustom=0
+customTestCount=0
+checkExist=0
+findBasename=0
+[[ -t 1 ]] && quiet=0 || quiet=1
+
+grepArgs="-E"
+countCmd=
+nullCmd=
+checkLogOp="&&"
+checkExistTest=
+TEMP="$(getopt -o b,h,0,x,i,w,o,t:,p,A,e,u,c,S,q,n,l: -l help,or,wholename,files,dirs,links,files-zero,files-nonzero,has-read,has-write,has-execute,char-devs,block-devs,sockets,pipes,user-owned,group-owned,has-setgid,has-setuid,has-sticky,no-files,no-dirs,no-links,no-has-read,no-has-write,no-has-execute,no-char-devs-no-block-devs,no-sockets,no-user-owned,no-group-owned,no-has-sticky,no-pipes,no-has-setgid,no-has-setuid,statistics,basename,pretend,null,quiet,noregex,count,ignore-case,txtpath:,existing,update,all,limit -n "${0##*/}" -- "$@")" || exit 2
+
+helpMsg="Usage: ${0##*/} [OPTION]... [PATTERN]...\n\
+Search for entries in the tlocate txt file\n\n\
+OPTIONS:\n\
+-A,--all\t\tonly print entries that match all patterns\n\
+-b,--basename\t\tmatch only the base name of path names\n\
+-c,--count\t\tonly print number of found entries\n\
+-t,--txtpath\t\tTXTPATH use TXTPATH instead of default text file (which is $txtPath)\n\
+-e,--existing\t\tonly print entries for currently existing files\n\
+-h,--help\t\tprint this help\n\
+-i,--ignore-case\tignore case distinctions when matching patterns\n\
+-l,--limit\t\tLIMIT limit output (or counting) to LIMIT entries\n\
+-p,--pretend\t\tprint the query or update command that would be run instead of running it\n\
+-0,--null\t\tseparate entries with NUL on output\n\
+-S,--statistics\t\tdon't search fo entries, print statistics about the ${0##*/} text file ($txtPath by default)\n\
+-q,--quiet\t\tsupress \"${0##*/}: \" messages and timestamp when querying (automatically enabled when feeding into a pipe)\n\
+-x,--noregex\t\tinterpret PATTERN literally rather than as a regular expression\n\
+-w, --wholename\t\tmatch whole path name (default). Overrides --basename\n\n\n\
+\
+\
+The following options allow for the filtering of the responses by type or attribute. These options also may cause slowdowns in querys with lots of results. All imply --existing and --basename although the latter can be overriden by -w/--wholename\n\
+--files, --no-files\t\t\tentry is (not) regular file (includes links)\n\
+--dirs, --no-dirs\t\t\tentry is (not) a directory\n\
+--links, --no-links\t\t\tentry is (not) a symbolic link\n\
+--char-devs, --no-char-devs\t\tentry is (not) a character device\n\
+--block-devs, --no-block-devs\t\tentry is (not) a block device\n\
+--sockets,--no-sockets\t\t\tentry is (not) a socket\n\
+--pipes,--no-pipes\t\t\tentry is (not) a pipe\n\
+--files-zero,--files-nonzero\t\tentry a file and is (not) zero bytes in length\n\
+--has-read,--no-has-read\t\tread permission is (not) granted on entry\n\
+--has-write,--no-has-write\t\twrite permission is (not) granted on entry\n\
+--has-execute,--no-has-execute\t\texecute permission is (not) granted on entry\n\
+--user-owned,--no-user-owned\t\tentry is owned effective user ID\n\
+--group-owned,--no-group-owned\t\tentry is owned by effective group ID\n\
+--has-setuid,--no-has-setuid\t\tset-user-ID bit is (not) set on entry\n\
+--has-setgid,--no-has-setgid\t\tentry is (not) set-group-ID\n\
+--has-sticky,--no-has-sticky\t\tsticky bit is (not) set on entry\n\n\
+\
+NOTE: By default, the logical operator AND is used between filtering options (e.g. '${0##*/} --files --no-links test' would show entries in $txtPath that are files AND not symlinks). This behavior can be changed by adding -o/--or (e.g. '${0##*/} --or --sockets --pipes test' would print out entries in $txtPath which are either sockets OR pipes)."
+
+for i in "${configFiles[@]}"; do 
+    [[ -f "$i" ]] && source "$i"
+done
+    
+
+eval set -- "$TEMP"
+while true; do
+    case "${1}" in
+        -u|--update) update=1;;
+        -q|--quiet) quiet=1;;
+        -h|--help) echo -e "$helpMsg" | less; exit;;
+        -l|-n|--limit) 
+            if [[ $2 =~ ^[0-9]+$ ]]; then
+                headCmd="| head -n${2}"
+                shift
+            else
+                techoerr "Limit must be a positive integer\n" 
+                exit 1
+           fi 
+           ;;
+       -c|--count)countCmd="| wc -l";;
+       -A|--all) and=1;;
+       -e|--existing) noCustom=1; customTest '-e';;
+       -t|--txtpath) txtPath="$2";; 
+       -i|--ignore-case) grepArgs+=" -i";;
+       -p|--pretend)showCmd=1; quiet=1;;
+       -x|--noregex)grepArgs=$(sed 's/-E//' <<<"$grepArgs");grepArgs+=" -F";;
+       -S|--statistics) stats=1;;
+       -0|--null)nullCmd="| tr '\n' '\x00'" ;; 
+       -b|--basename) findBasename=1;;
+       -w|--wholename)findWholename=1;;
+       -o|--or) checkLogOp="||";;
+       --files)customTest '-f';;
+       --no-files) customTest '! -f';;
+       --dirs)customTest '-d';;
+       --no-dirs)customTest '-d';;
+       --links)customTest '-h';;
+       --no-links)customTest '-h';;
+       --files-nonzero)customTest '-s';;
+       --files-zero)customTest '! -s';;
+       --has-read)customTest '-r';;
+       --no-has-read) customTest '! -r';;
+       --has-write) customTest '-w';;
+       --no-has-write) customTest '! -w';;
+       --has-execute) customTest '-x';;
+       --no-has-execute) customTest '! -x';;
+       --char-devs) customTest '-c';;
+       --no-char-devs) customTest '! -c';;
+       --block-devs) customTest '-b';;
+       --no-block-devs) customTest '! -b';;
+       --sockets) customTest '-S';;
+       --no-sockets) customTest '! -S';;
+       --user-owned) customTest '-O';;
+       --no-user-owned) customTest '! -O';;
+       --group-owned) customTest '-G';;
+       --no-group-owned) customTest '! -G';;
+       --has-sticky) customTest '-k';;
+       --no-has-sticky) customTest '! -k';;
+       --pipes) customTest '-p';;
+       --no-pipes) customTest '! -p' ;;
+       --has-setgid) customTest '-g' ;;
+       --no-has-setgid) customTest '! -g';;
+       --has-setuid) customTest '-u';;
+       --no-has-setuid) customTest '! -u';;
+       --) shift; break;;
+   esac
+   shift
+done
+checkConflicts
+if (( update == 1 )); then 
+    updateTxt
+elif 
+    (( stats == 1 )); then
+    txtStats
+else 
+    queryTxt "$@"
+fi
