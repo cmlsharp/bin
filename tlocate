@@ -1,17 +1,55 @@
 #!/usr/bin/env bash
+#
+# Written by: crossroads1112
+# Purpose: mlocate written in bash, uses plain text file instead of database for indexing
+#
+# Pros/Cons over mlocate
+#
+# Pros: 
+#   * Allows nearly arbitrary filtering of results by attribute or type (see test man page for possible filters)
+#   * Only requires bash, GNU coreutils and sudo
+#   * Uses similar command syntax and configuration to mlocate
+#   * Better handling of btrfs subvolumes
+#   * (minor) Searches are marginally faster (Almost unnoticeable without the time command)
+#   * (minor) -p/--pretend option shows command that would be executed which allows users to make sure they execute what they want
+#   * (minor) --statistics prints what was in the configuration file at the time of the last update
+#   * (minor) By default (without the --quiet flag), tlocate prints the date and time the text file was last updated after a query.
+#     This is automatically disabled if script is going into a pipe.
+#
+# Cons:
+#   * WRITTEN IN FREAKING BASH. Considering rewrite in Python. Also considering port to sh for extra portability
+#   * Updating text file takes longer than updating mlocate database (I'm looking into optimizations here)
+#   * --basename requires regexes either due to a limit of my understanding or a limitation of grep
+#   * (minor)No sanity checks on filtering e.g. tlocate --files --existing is redundant but the script allows it.
+#   * (minor) In a similar vein, no performance sanity checks either e.g. tlocate --existing --or --links is more effecient
+#     than tlocate --links --or --existing (as bash does not evalute an or statement if the first test fails and files are
+#     more likely to exist than be links).
+#
+#
+# Differences in operation between [tm]locate:
+#   * Updating text file is not separate command. tlocate -u is the equivalent updatedb
+#   * locate --nofolow is equivalent to tlocate --existing --or --links
+#   * Regexes are default but can be disabled with -x/--noregex
+#   * --basename requires regexes (see above)
+#   * Configuration files are very similar but entries resemble bash arrays
+#
+###########################################################################################################################################
+
 techo(){
     echo -ne "${0##*/}: $@"
 }
 techoerr(){
-    >&2 echo -ne "tlocate: $@"
+    >&2 echo -ne "${0##*/}: $@"
 }
 updateTxt(){
     separator="###################################################"
     [[ -n $pruneDirs ]] && \
-        findOptsDirs=$(for dir in "${pruneDirs[@]}"; do echo -n " -path '$dir' -o";done)
+        findOptsDirs=$(for dir in "${pruneDirs[@]}"; do echo -n " -path '$dir' -o";done) || \
+        isEmpty=1
 
     [[ -n $pruneNames ]] && \
-        findOptsNames=$(for name in "${pruneNames[@]}"; do echo -n " -path '*/${name}' -o";done)
+        findOptsNames=$(for name in "${pruneNames[@]}"; do echo -n " -path '*/${name}' -o";done) || \
+        isEmpty=1
 
     [[ -n $pruneFS ]] && \
         findOptsFS=$(for badFSDir in \
@@ -19,18 +57,21 @@ updateTxt(){
             mount  | grep "type $fs" | awk '{print $3}';\
         done); do \
         echo -n " -path '$badFSDir' -o";\
-    done | sed 's/ -o$//')
+        done | sed 's/ -o$//') || \
+        isEmpty=1
 
+    if (( isEmpty == 0 )); then
+        wholeCmd="sudo find / \( $findOptsDirs $findOptsNames $findOptsFS \) -prune -o -print 2>/dev/null |  sudo tee -a $txtPath >/dev/null"
+    else 
+        wholeCmd="sudo find / 2>/dev/null | sudo tee -a $txtPath >/dev/null"
+        techo "WARNING: No prune options found in configuration file. Indexing whole filesystem\n"
+    fi
     (( quiet == 0 )) && techo "Indexing files requires root. Checking for sudo privileges.\n"
     (( showCmd == 0 )) && { sudo -v || exit 1; }
     (( quiet == 0 )) && techo "Done\n"
     (( showCmd == 0 )) && echo -e "#$date\n$separator$(for file in "${configFiles[@]}"; do [[ -f "$file" ]] && { echo -e "\n#$file\n$separator"; sed '/^$/d' "$file" | grep -vE '^#' | sed 's/^/#/' | grep prune; };done)" | sudo tee "$txtPath" > /dev/null
     (( quiet == 0 )) && techo "Indexing files..."
-    if (( showCmd == 1 )); then
-        echo "sudo find / \( $findOptsDirs $findOptsNames $findOptsFS \) -prune -o -print 2>/dev/null |  sudo tee -a $txtPath >/dev/null"
-    else
-        eval "sudo find / \( $findOptsDirs $findOptsNames $findOptsFS \) -prune -o -print 2>/dev/null | sudo tee -a $txtPath >/dev/null"
-    fi
+    (( showCmd == 1 )) && echo "$wholeCmd" || eval "$wholeCmd"
     (( quiet == 0 )) && echo "Done."
 }
 
@@ -46,11 +87,22 @@ queryTxt(){
     fi
 
     [[ $and == 1 ]] && \
-        grepCmd=$(echo -n "grep $grepArgs '$(if (( findBasename == 1 )); then echo -n "*/.*${1}[^/]*$"; else echo -n "$1";fi)' $txtPath "; \
+        grepCmd=$(echo -n "grep $grepArgs '$(\
+            if (( findBasename == 1 )); then\
+                echo -n "*/.*${1}[^/]*$"; \
+            else \
+                echo -n "$1";\
+            fi)' $txtPath "; \
         shift;\
         for term in "$@"; do\
-            echo -n "| grep $grepArgs '$(if (( findBasename == 1 )); then echo -n "*/.*${term}[^/]*$"; else echo -n "$term";fi)'";\
+            echo -n "| grep $grepArgs '$(\
+            if (( findBasename == 1 )); then\
+                echo -n "*/.*${term}[^/]*$"; \
+            else \
+                echo -n "$term";\
+            fi)'";\
         done) || \
+        \
         grepCmd="grep $grepArgs '$(\
         for term in "$@"; do \
             echo -n "$(if (( findBasename == 1 )); then echo -n "*/.*${term}[^/]*$"; else echo -n "$term";fi)$(if ! grep -q --  '-E' <<<"$grepArgs"; then \
@@ -60,20 +112,30 @@ queryTxt(){
             sed 's/|$//' | sed 's/\\$//')' $txtPath" 
 
     if (( checkExist == 1 )); then
-        wholeCmd="$grepCmd |  grep -vE '^#'| while read path; do $(if (( customTestCount > 1 )); then echo -n "{ $(sed 's/ $//' <<<"$checkExistTest"); }";else echo -n "$checkExistTest";fi) && echo \$path; done $headCmd $nullCmd  $countCmd"
+        wholeCmd="$grepCmd |  grep -vE '^#'| while read path; do $(\
+            if (( customTestCount > 1 )); then\
+                echo -n "{ $(sed 's/ $//' <<<"$checkExistTest"); }";\
+            else \
+                echo -n "$checkExistTest";\
+            fi) && echo \$path; done $headCmd $nullCmd $countCmd"
 
     else
         wholeCmd="$grepCmd  | grep -vE '^#' $headCmd $nullCmd $countCmd"
     fi
-    (( showCmd == 1 )) && { echo "$wholeCmd"; return; } || { [[ -z $(eval "$wholeCmd") ]] && return 1 || eval "$wholeCmd"; }
+    (( showCmd == 1 )) &&\
+        { echo "$wholeCmd"; return; }\
+        || \
+        { [[ -z $(eval "$wholeCmd") ]] && return 1 || eval "$wholeCmd"; }
 
-    (( quiet == 0 )) && techo "List last updated $(head -n1 $txtPath | sed 's/#//' | tr -s ' ' ' ')\n"
+    (( quiet == 0 )) &&\
+        techo "List last updated $(head -n1 $txtPath | sed 's/#//' | tr -s ' ' ' ')\n"
 }
 txtStats(){
     eval "$(grep -E '^#' $txtPath | sed 's/^#//' | grep -E "^prune(FS|Names|Dirs)=\(")"
+
     echo "$(tput bold)Text file path:$(tput sgr0) $txtPath"
     echo
-    echo "$(tput bold)Total entries in text file:$(tput sgr0) $( grep -Ev "^#" "$txtPath" | wc -l | awk '{print $1}')"
+    echo "$(tput bold)Total entries in text file:$(tput sgr0) $(grep -Ev "^#" "$txtPath" | wc -l | awk '{print $1}')"
     echo
     echo "$(tput bold)Text file last updated:$(tput sgr0) $(head -n1 "$txtPath" | sed 's/^#//' | tr -s ' ' ' ')"
     echo
@@ -88,21 +150,24 @@ txtStats(){
 customTest(){
     (( noCustom == 0 )) && findBasename=1 
     checkExist=1 
-    eval "checkExistTest+='[[ $@ \$path ]] $checkLogOp '"
+    eval "checkExistTest+='[[ $@ \$path ]] '"
     customTestCount=$(($customTestCount + 1 ))
 }
 checkConflicts(){
     if [[ -n $countCmd && -n $nullCmd ]]; then
         nullCmd=""
     fi
-    [[ -n $checkExistTest ]] && checkExistTest=$(sed -r  's/[|&]{2} *$//' <<<"$checkExistTest")
+    #[[ -n $checkExistTest ]] && \
+        #checkExistTest=$(sed -r  's/[|&]{2} *$//' <<<"$checkExistTest")
+
     (( findWholename == 1 )) && findBasename=0
     if ! grep -q -- "-E" <<<"$grepArgs" && (( findBasename == 1 )); then
         techoerr "${0##*/}: --basename requires regexes.\nA possible workaround would be to alter your query by adding a '\' before each character that would be interpreted as a regex (e.g. \()[].?+* etc.)\n"
         exit 1
     fi
-    if [[ "$checkLogOp" == "||" ]] && grep -q -- '&&' <<<"$checkExistTest"; then
-        checkExistTest=$(sed 's/&&/||/' <<<"$checkExistTest")
+    if [[ -n $checkExistTest ]] && ! grep -Eq '^(\[{2}( +!)? +-[a-z,A-Z] +\$path +\]{2}( +[|&]{2} +)?)+$'  <<<$(sed 's/ $//' <<<"$checkExistTest"); then
+        techoerr "There seems to be a problem with your filter syntax. Please run ${0##*/} -h for correct syntax\n"
+        exit 1
     fi
 }
 
@@ -110,6 +175,7 @@ configFiles=( "/etc/${0##*/}.conf" "$HOME/.config/${0##*/}.conf" )
 txtPath=/etc/${0##*/}.txt
 date=$(date "+%D at %l:%M %p")
 
+isEmpty=0
 and=0
 update=0
 showCmd=0
@@ -126,10 +192,10 @@ countCmd=
 nullCmd=
 checkLogOp="&&"
 checkExistTest=
-TEMP="$(getopt -o b,h,0,x,i,w,o,t:,p,A,e,u,c,S,q,n,l: -l help,or,wholename,files,dirs,links,files-zero,files-nonzero,has-read,has-write,has-execute,char-devs,block-devs,sockets,pipes,user-owned,group-owned,has-setgid,has-setuid,has-sticky,no-files,no-dirs,no-links,no-has-read,no-has-write,no-has-execute,no-char-devs-no-block-devs,no-sockets,no-user-owned,no-group-owned,no-has-sticky,no-pipes,no-has-setgid,no-has-setuid,statistics,basename,pretend,null,quiet,noregex,count,ignore-case,txtpath:,existing,update,all,limit -n "${0##*/}" -- "$@")" || exit 2
+TEMP="$(getopt -o b,h,0,x,i,w,o,t:,p,A,e,u,c,S,q,a,n,l: -l help,and,or,wholename,files,dirs,links,files-zero,files-nonzero,has-read,has-write,has-execute,char-devs,block-devs,sockets,pipes,user-owned,group-owned,has-setgid,has-setuid,has-sticky,no-files,no-dirs,no-links,no-has-read,no-has-write,no-has-execute,no-char-devs-no-block-devs,no-sockets,no-user-owned,no-group-owned,no-has-sticky,no-pipes,no-has-setgid,no-has-setuid,statistics,basename,pretend,null,quiet,noregex,count,ignore-case,txtpath:,existing,update,all,limit -n "${0##*/}" -- "$@")" || exit 2
 
 helpMsg="Usage: ${0##*/} [OPTION]... [PATTERN]...\n\
-Search for entries in the tlocate txt file\n\n\
+Search for entries in the ${0##*} txt file\n\n\
 OPTIONS:\n\
 -A,--all\t\tonly print entries that match all patterns\n\
 -b,--basename\t\tmatch only the base name of path names\n\
@@ -147,7 +213,8 @@ OPTIONS:\n\
 -w, --wholename\t\tmatch whole path name (default). Overrides --basename\n\n\n\
 \
 \
-The following options allow for the filtering of the responses by type or attribute. These options also may cause slowdowns in querys with lots of results. All imply --existing and --basename although the latter can be overriden by -w/--wholename\n\
+The following options allow for the filtering of the responses by type or attribute. These options also may cause slowdowns in querys with lots of results. All imply --existing and --basename although the latter can be overriden by -w/--wholename.\n\n\
+\
 --files, --no-files\t\t\tentry is (not) regular file (includes links)\n\
 --dirs, --no-dirs\t\t\tentry is (not) a directory\n\
 --links, --no-links\t\t\tentry is (not) a symbolic link\n\
@@ -163,9 +230,11 @@ The following options allow for the filtering of the responses by type or attrib
 --group-owned,--no-group-owned\t\tentry is owned by effective group ID\n\
 --has-setuid,--no-has-setuid\t\tset-user-ID bit is (not) set on entry\n\
 --has-setgid,--no-has-setgid\t\tentry is (not) set-group-ID\n\
---has-sticky,--no-has-sticky\t\tsticky bit is (not) set on entry\n\n\
+--has-sticky,--no-has-sticky\t\tsticky bit is (not) set on entry\n\
+-o,--or\t\t\t\t\tAdd logical operator OR between two filters\n\
+-a,--and\t\t\t\tAdd logical operator AND between two filters\n\n\
 \
-NOTE: By default, the logical operator AND is used between filtering options (e.g. '${0##*/} --files --no-links test' would show entries in $txtPath that are files AND not symlinks). This behavior can be changed by adding -o/--or (e.g. '${0##*/} --or --sockets --pipes test' would print out entries in $txtPath which are either sockets OR pipes)."
+NOTE: To use multiple filters, you must specify --or or --and between each filter"
 
 for i in "${configFiles[@]}"; do 
     [[ -f "$i" ]] && source "$i"
@@ -193,18 +262,19 @@ while true; do
        -t|--txtpath) txtPath="$2";; 
        -i|--ignore-case) grepArgs+=" -i";;
        -p|--pretend)showCmd=1; quiet=1;;
-       -x|--noregex)grepArgs=$(sed 's/-E//' <<<"$grepArgs");grepArgs+=" -F";;
+       -x|--noregex)grepArgs=$(sed 's/-E//' <<<"$grepArgs");;
        -S|--statistics) stats=1;;
        -0|--null)nullCmd="| tr '\n' '\x00'" ;; 
        -b|--basename) findBasename=1;;
        -w|--wholename)findWholename=1;;
-       -o|--or) checkLogOp="||";;
+       -o|--or) checkExistTest+="|| ";;
+       -a|--and) checkExistTest+="&& ";;
        --files)customTest '-f';;
        --no-files) customTest '! -f';;
        --dirs)customTest '-d';;
        --no-dirs)customTest '-d';;
        --links)customTest '-h';;
-       --no-links)customTest '-h';;
+       --no-links)customTest '! -h';;
        --files-nonzero)customTest '-s';;
        --files-zero)customTest '! -s';;
        --has-read)customTest '-r';;
