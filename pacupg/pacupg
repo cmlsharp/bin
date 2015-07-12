@@ -83,7 +83,7 @@ aur(){
         sudo sed -i '/clean=/d' $pacaurconfig && 
         echo "clean=true" | sudo tee -a $pacaurconfig > /dev/null # Make sure clean option is off in pacaur
 
-    builddir=${builddir=/tmp/pacaurtmp-$USER}
+    builddir=${builddir:-/tmp/pacaurtmp-$USER}
 
 
     msg "Checking for updates...\n"
