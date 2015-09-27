@@ -99,12 +99,12 @@ aur(){
     if [[ -n $buildpkgs ]]; then
             eval "in_block=1"
             # Take snapshot and store snapshot number in $pre
-            pre=$(snapper create --type=pre --cleanup-algorithm=number --print-number --description="AUR upgrade") 
+            pre=$(sudo snapper create --type=pre --cleanup-algorithm=number --print-number --description="AUR upgrade") 
             msg "New pre snapshot with number ${pre}\n"
             sudo pacman -U --noconfirm $buildpkgs && msg "Packages upgraded\n" || return 1
             msg "Taking post snapshot\n"
             # Take post snapshot and store number in $post
-            post=$(snapper create --type=post --cleanup-algorithm=number --print-number --pre-number="$pre") 
+            post=$(sudo snapper create --type=post --cleanup-algorithm=number --print-number --pre-number="$pre") 
             for pkg in "$buildpkgs"; do 
                 rm $pkg
             done
@@ -186,7 +186,7 @@ rollback(){
                 warn "No such snapshot. Quiting.\n"
                 exit 1
             fi
-            current=$(snapper create --print-number)
+            current=$(sudo snapper create --print-number)
             sudo snapper -v undochange $past..$current  #Undo change from selected snapshot to now
             sudo snapper delete $current
             ;; 
@@ -253,13 +253,13 @@ bootbackup
 
 in_block=1
 # Take snapshot and store snapshot number in $pre
-pre=$(snapper create --type=pre --cleanup-algorithm=number --print-number --description="Package upgrade${snapComment}")
+pre=$(sudo snapper create --type=pre --cleanup-algorithm=number --print-number --description="Package upgrade${snapComment}")
 msg "New pre snapshot with number ${pre}\n"
 sudo pacman -Su --noconfirm # Upgrade packages
 echo
 
 # Take post snapshot and store number in $post
-post=$(snapper create --type=post --cleanup-algorithm=number --print-number --pre-number="$pre") 
+post=$(sudo snapper create --type=post --cleanup-algorithm=number --print-number --pre-number="$pre") 
 msg "Snapshot block complete: $snpr_cnfg/${pre}..${post}\n"
 echo -e "Packages upgraded: \n\n$pkgs" | sudo tee -a $log_file > /dev/null
 sudo sed -i '/Proceed with installation/d' $log_file 
