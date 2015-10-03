@@ -6,6 +6,7 @@ pacupg \- wrap upgrades in btrfs snapshots with optional backups of /boot
 [\fB\-h|\-\-help\fR]
 [\fB\-b|\-\-boot\fR]
 [\fB\-a|\-\-aur\fR]
+[\fB\-i|\-\-ignore\fR]
 [\fB\-r|\-\-rollback\fR]
 [\fB\-d|\-\-devel\fR]
 .SH DESCRIPTION
@@ -25,6 +26,9 @@ Force boot backup even if /boot is not on a separate partition
 .TP
 .BR \-a,\-\-aur\fR
 Upgrade AUR packages as well (requires pacaur)
+.TP
+.BR \-i,\-\-ignore\fR
+Specify comma delimited list of packages to skip durring upgrade
 .TP
 .BR \-r,\-\-rollback\fR
 Rollback previous upgrades

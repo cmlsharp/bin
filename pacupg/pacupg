@@ -31,6 +31,7 @@ OPTIONS:\n\
 -h,--help\t\tPrint this help message\n\
 -b,--boot\t\tForce backup of boot to ${bootbackupdir}\n\
 -a,--aur\t\tUpgrade AUR packages as well (requires pacaur)\n\
+-i,--ignore\t\tSpecify comma delimited list of packages to skip during upgrade\n\
 -r,--rollback\t\tRollback previous upgrades\n\
 -d,--devel\t\tSame as -a but upgrades AUR development packages."
 
@@ -87,7 +88,7 @@ aur(){
 
 
     msg "Checking for updates...\n"
-    aurpkgs=$(pacaur --color never $devel --check | awk -F'aur  ' '{print $2}')
+    aurpkgs=$(pacaur --color never $ignoreopts $devel --check | awk -F'aur  ' '{print $2}')
     if [[ -z $aurpkgs ]]; then
         msg "No AUR packages to upgrade.\n"
         [[ $pkgsupgraded == 1 ]] && { btrgrub;  msg "Log of upgraded packages available at ${log_file}\n"; return; }
@@ -101,7 +102,7 @@ aur(){
             # Take snapshot and store snapshot number in $pre
             pre=$(sudo snapper create --type=pre --cleanup-algorithm=number --print-number --description="AUR upgrade") 
             msg "New pre snapshot with number ${pre}\n"
-            sudo pacman -U --noconfirm $buildpkgs && msg "Packages upgraded\n" || return 1
+            sudo pacman -U --noconfirm $ignoreopts $buildpkgs && msg "Packages upgraded\n" || return 1
             msg "Taking post snapshot\n"
             # Take post snapshot and store number in $post
             post=$(sudo snapper create --type=post --cleanup-algorithm=number --print-number --pre-number="$pre") 
@@ -206,19 +207,25 @@ rollback(){
 menu
 }
 
+# Exit if checks fail
 check || exit 
-TEMP="$(getopt -o h,a,r,d,b -l boot,devel,help,aur,rollback -n "${0##*/}" -- "$@")" || exit 1
+ignoreopts=""
+TEMP="$(getopt -o h,a,r,d,i:,b -l boot,devel,help,aur,rollback,ignore: -n "${0##*/}" -- "$@")" || exit 1
 eval set -- "$TEMP"
 while true; do
    case "${1}" in
        -a|--aur) aur=1; shift;;
        -h|--help) echo -e $helpmsg; exit 0;;
        -b|--boot) boot=2; shift;;
+       -i|--ignore) [[ -z "$ignoreopts" ]] && ignoreopts+="--ignore "; ignoreopts+="$2,"; shift 2;;
        -r|--rollback) rollback; shift;;
        -d|--devel) aur=1; devel="--devel --needed" ;shift;;
        --) break ;;
    esac
 done
+
+# Remove trailing comma if it exists;
+[[ "${ignoreopts: -1}" == "," ]] && ignoreopts="${ignoreopts: 0: -1}"
  
 [[ !  -d "$log_path" ]] && sudo mkdir -p $log_path # If log directory does not exist, create it
 
@@ -235,23 +242,23 @@ quit() { # Run cleanup code upon exit or error
 trap quit EXIT ERR 15 1 2
 
 msg "Retrieving packages...\n"
-sudo pacman -Syuw && msg "Done\n"  || exit 2 # Only pull down needed packages. Don't install
+sudo pacman -Syuw $ignoreopts && msg "Done\n"  || exit 2 # Only pull down needed packages. Don't install
 
 pkgs=$(package-query -SQuf "%n  %l  ->  %V\n")
-if [[ -z $pkgs ]]; then
-    [[ $boot == 2 ]] && bootbackup 
-    [[ $aur == 1 ]] && { aur; exit; }
+if [[ -z $pkgs ]]; then # No packages to upgrade
+    [[ $boot == 2 ]] && bootbackup # If bootbackup was manually set, do it
+    [[ $aur == 1 ]] && { aur; exit; } # Try AUR
     msg "Nothing to update. Aborting.\n" && exit 2
 fi
 
-if pacman -Qqu | grep -q "^linux$";  then
+if pacman -Qqu | grep -q "^linux$";  then # There's a linux kernel upgrade
     boot=1
     snapComment=" + kernel upgrade"
 fi
 
 bootbackup 
 
-in_block=1
+in_block=1 # This allows quit() to know if we are in a snapshot
 # Take snapshot and store snapshot number in $pre
 pre=$(sudo snapper create --type=pre --cleanup-algorithm=number --print-number --description="Package upgrade${snapComment}")
 msg "New pre snapshot with number ${pre}\n"
@@ -262,6 +269,7 @@ echo
 post=$(sudo snapper create --type=post --cleanup-algorithm=number --print-number --pre-number="$pre") 
 msg "Snapshot block complete: $snpr_cnfg/${pre}..${post}\n"
 echo -e "Packages upgraded: \n\n$pkgs" | sudo tee -a $log_file > /dev/null
+# Remove pacman junk from logfile
 sudo sed -i '/Proceed with installation/d' $log_file 
 in_block=0
 pkgsupgraded=1
