@@ -5,13 +5,13 @@
 # Purpose: Ease the process of uploading packages to the AUR
 #
 #########################
-helpmsg="${0##*/} [OPTIONS] FILES\n\n-h\t\tPrint this help message\n-u\t\tDon't upload the package to AUR\n-n\t\tDon't try building package before creating the src.tar.gz\n-4\t\tUpload to aur4.archlinux.org"
+helpmsg="${0##*/} [OPTIONS] FILES\n\n-h\t\tPrint this help message\n-u\t\tDon't upload the package to AUR\n-b\t\tDon't try building package before creating the src.tar.gz\n-4\t\tUpload to aur4.archlinux.org"
 tmpdir=/tmp/mkaur
 nobuild=0
 aur3=0
 noupload=0
 aur4(){
-   [[ -f ${tmpdir}/aurpkg/.SRCINFO ]] || mksrcinfo
+   mksrcinfo
    local pkgname 
    eval $(grep "^pkgname=" "${tmpdir}/aurpkg/PKGBUILD") 
    mkdir -p "${tmpdir}/aur4-git"
