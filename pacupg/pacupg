@@ -105,7 +105,7 @@ aur(){
             # Take snapshot and store snapshot number in $pre
             pre="$(sudo snapper create --type=pre --cleanup-algorithm=number --print-number --description="AUR upgrade")"
             msg "New pre snapshot with number ${pre}\n"
-            sudo pacman -U --noconfirm ${ignoreopts} "${buildpkgs}" && msg "Packages upgraded\n" || return 1
+            sudo pacman -U --noconfirm ${ignoreopts} ${buildpkgs} && msg "Packages upgraded\n" || return 1
             msg "Taking post snapshot\n"
             # Take post snapshot and store number in $post
             post="$(sudo snapper create --type=post --cleanup-algorithm=number --print-number --pre-number="$pre")"
