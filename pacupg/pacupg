@@ -98,7 +98,7 @@ aur(){
     # Make sure the packages land in the folder we expect by setting PKGDEST before building the packages.
     # PKGDEST is used by makepkg as a target location for built packages (see man makepkg.conf).
     export PKGDEST="${builddir}"
-    if eval "pacaur --color always -Syuw $devel"; then
+    if eval "pacaur --color always -Syuw ${devel}"; then
     buildpkgs="$(find ${builddir} -type f -regex ".*\.pkg\.\(tar\|tar\.[gx]z\)")"
     if [[ "${buildpkgs}" ]]; then
             eval "in_block=1"
@@ -109,7 +109,7 @@ aur(){
             msg "Taking post snapshot\n"
             # Take post snapshot and store number in $post
             post="$(sudo snapper create --type=post --cleanup-algorithm=number --print-number --pre-number="$pre")"
-            for pkg in "${buildpkgs}"; do
+            for pkg in ${buildpkgs}; do
                 rm "${pkg}"
             done
             msg "Snapshot block complete: $snpr_cnfg/${pre}..${post}\n"
