@@ -80,14 +80,14 @@ aur(){
         exit 1
     fi
     source "${pacaurconfig}"
-    [[ -z "${clean}" || "${clean}" != "true" ]] &&
-        sudo sed -i '/clean=/d' "${pacaurconfig}" &&
-        echo "clean=true" | sudo tee -a "${pacaurconfig}" > /dev/null # Make sure clean option is off in pacaur
+    [[ -z ${clean} || ${clean} != true ]] &&
+        sudo sed -i '/clean=/d' "$pacaurconfig" &&
+        echo "clean=true" | sudo tee -a "$pacaurconfig" > /dev/null # Make sure clean option is off in pacaur
 
     builddir="${builddir:-${TMPDIR:-/tmp}/pacaurtmp-$USER}"
 
     msg "Checking for updates...\n"
-    aurpkgs="$(pacaur --color never ${ignoreopts} ${devel} --check | awk -F'aur  ' '{print $2}')"
+    aurpkgs="$(pacaur --color never $ignoreopts $devel --check | awk -F'aur  ' '{print $2}')"
     if [[ -z "${aurpkgs}" ]]; then
         msg "No AUR packages to upgrade.\n"
         [[ "${pkgsupgraded}" == 1 ]] && { btrgrub;  msg "Log of upgraded packages available at ${log_file}\n"; return; }
@@ -103,7 +103,7 @@ aur(){
     if [[ "${buildpkgs}" ]]; then
             eval "in_block=1"
             # Take snapshot and store snapshot number in $pre
-            pre="$(sudo snapper create --type=pre --cleanup-algorithm=number --print-number --description="AUR upgrade")"
+            pre=$(sudo snapper create --type=pre --cleanup-algorithm=number --print-number --description="AUR upgrade")
             msg "New pre snapshot with number ${pre}\n"
             sudo pacman -U --noconfirm ${ignoreopts} ${buildpkgs} && msg "Packages upgraded\n" || return 1
             msg "Taking post snapshot\n"
@@ -113,7 +113,7 @@ aur(){
                 rm "${pkg}"
             done
             msg "Snapshot block complete: $snpr_cnfg/${pre}..${post}\n"
-            echo -e "\nAUR packages upgraded: \n\n$aurpkgs" | sudo tee -a "${log_file}" > /dev/null
+            echo -e "\nAUR packages upgraded: \n\n$aurpkgs" | sudo tee -a "$log_file" > /dev/null
             eval "in_block=0"
             btrgrub
             msg "Log of upgraded packages available at ${log_file}\n\n"
