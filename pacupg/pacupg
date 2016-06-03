@@ -79,8 +79,8 @@ aur(){
         warn "pacaur not found. Aborting\n"
         exit 1
     fi
-    source "${pacaurconfig}"
-    [[ -z ${clean} || ${clean} != true ]] &&
+    source "$pacaurconfig"
+    [[ -z $clean || $clean != true ]] &&
         sudo sed -i '/clean=/d' "$pacaurconfig" &&
         echo "clean=true" | sudo tee -a "$pacaurconfig" > /dev/null # Make sure clean option is off in pacaur
 
@@ -88,35 +88,35 @@ aur(){
 
     msg "Checking for updates...\n"
     aurpkgs="$(pacaur --color never $ignoreopts $devel --check | awk -F'aur  ' '{print $2}')"
-    if [[ -z "${aurpkgs}" ]]; then
+    if [[ -z "$aurpkgs" ]]; then
         msg "No AUR packages to upgrade.\n"
-        [[ "${pkgsupgraded}" == 1 ]] && { btrgrub;  msg "Log of upgraded packages available at ${log_file}\n"; return; }
+        [[ "$pkgsupgraded" == 1 ]] && { btrgrub;  msg "Log of upgraded packages available at $log_file\n"; return; }
         return 2
     fi
-    rm -rf "${builddir}" && mkdir "${builddir}"
+    rm -rf "$builddir" && mkdir "$builddir"
 
     # Make sure the packages land in the folder we expect by setting PKGDEST before building the packages.
     # PKGDEST is used by makepkg as a target location for built packages (see man makepkg.conf).
-    export PKGDEST="${builddir}"
-    if eval "pacaur --color always -Syuw ${devel}"; then
-    buildpkgs="$(find ${builddir} -type f -regex ".*\.pkg\.\(tar\|tar\.[gx]z\)")"
-    if [[ "${buildpkgs}" ]]; then
+    export PKGDEST="$builddir"
+    if eval "pacaur --color always -Syuw $devel"; then
+    buildpkgs="$(find $builddir -type f -regex ".*\.pkg\.\(tar\|tar\.[gx]z\)")"
+    if [[ "$buildpkgs" ]]; then
             eval "in_block=1"
             # Take snapshot and store snapshot number in $pre
             pre=$(sudo snapper create --type=pre --cleanup-algorithm=number --print-number --description="AUR upgrade")
             msg "New pre snapshot with number ${pre}\n"
-            sudo pacman -U --noconfirm ${ignoreopts} ${buildpkgs} && msg "Packages upgraded\n" || return 1
+            sudo pacman -U --noconfirm $ignoreopts $buildpkgs && msg "Packages upgraded\n" || return 1
             msg "Taking post snapshot\n"
             # Take post snapshot and store number in $post
             post="$(sudo snapper create --type=post --cleanup-algorithm=number --print-number --pre-number="$pre")"
-            for pkg in ${buildpkgs}; do
-                rm "${pkg}"
+            for pkg in $buildpkgs; do
+                rm "$pkg"
             done
-            msg "Snapshot block complete: $snpr_cnfg/${pre}..${post}\n"
+            msg "Snapshot block complete: $snpr_cnfg/$pre..$post\n"
             echo -e "\nAUR packages upgraded: \n\n$aurpkgs" | sudo tee -a "$log_file" > /dev/null
             eval "in_block=0"
             btrgrub
-            msg "Log of upgraded packages available at ${log_file}\n\n"
+            msg "Log of upgraded packages available at $log_file\n\n"
             return 0
         else
             return 2
