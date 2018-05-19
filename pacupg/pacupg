@@ -58,7 +58,7 @@ check(){
     fi
 }
 bootbackup(){
-    if mount | grep -q /boot && [[ $boot == 2 ]] ; then
+    if mount | grep -q /boot && (( boot != 0 )) ; then
         [[ -d $bootbackupdir ]] || sudo mkdir -p $bootbackupdir # Make backup directory if it does not exist
         msg "Backing up /boot\n" 
         # Copy contents of /boot to directory set in $bootbackupdir and delete any extraneous files in the 
